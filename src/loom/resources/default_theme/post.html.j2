@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="{{ site.language }}">
+<head>
+  <meta charset="utf-8">
+  <title>{{ post.title }} - {{ site.title }}</title>
+</head>
+<body>
+  <article>
+    <h1>{{ post.title }}</h1>
+    <p><time datetime="{{ post.date.isoformat() }}">{{ post.date.isoformat() }}</time></p>
+    {{ content | safe }}
+  </article>
+  <p><a href="{{ site.base_url }}">&larr; Back to {{ site.title }}</a></p>
+</body>
+</html>

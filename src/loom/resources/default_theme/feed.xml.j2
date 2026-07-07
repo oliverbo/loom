@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>{{ site.title }}</title>
+    <link>{{ site.base_url }}</link>
+    <description>{{ site.description }}</description>
+    <language>{{ site.language }}</language>
+    {% for post in posts %}
+    <item>
+      <title>{{ post.title }}</title>
+      <link>{{ urls[post.slug] }}</link>
+      <guid>{{ urls[post.slug] }}</guid>
+      <pubDate>{{ post.date | rfc822 }}</pubDate>
+      {% for tag in post.tags %}<category>{{ tag }}</category>
+      {% endfor %}
+    </item>
+    {% endfor %}
+  </channel>
+</rss>

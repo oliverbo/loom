@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="{{ site.language }}">
+<head>
+  <meta charset="utf-8">
+  <title>{{ site.title }}</title>
+  <link rel="alternate" type="application/rss+xml" title="{{ site.title }}" href="feed.xml">
+</head>
+<body>
+  <h1>{{ site.title }}</h1>
+  {% if site.description %}<p>{{ site.description }}</p>{% endif %}
+  <ul>
+    {% for post in posts %}
+    <li>
+      <a href="{{ post.slug }}/">{{ post.title }}</a>
+      &mdash; <time datetime="{{ post.date.isoformat() }}">{{ post.date.isoformat() }}</time>
+    </li>
+    {% endfor %}
+  </ul>
+</body>
+</html>

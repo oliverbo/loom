@@ -1,0 +1,5 @@
+title = "Fixture Site"
+base_url = "https://example.com"
+description = "A site used only for tests."
+author = "Test Author"
+language = "en"

@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+dist/
+
+# Loom build output is always disposable — never commit it.
+build/
