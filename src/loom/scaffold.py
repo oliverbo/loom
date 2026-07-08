@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 from loom.errors import LoomError
+from loom.resources import DEFAULT_THEME_DIR
 
 DEFAULT_CONFIG = """\
 title = "My Site"
@@ -38,8 +40,14 @@ def init_site(site_root: Path, *, today: str) -> None:
     if (site_root / "loom.toml").exists():
         raise LoomError(f"{site_root} already contains a loom.toml; refusing to overwrite")
 
-    for directory in ("content/posts", "images", "templates", "static"):
+    for directory in ("content/posts", "images", "static"):
         (site_root / directory).mkdir(parents=True, exist_ok=True)
+
+    # Templates are meant to be edited, not just fallen back to -- copy
+    # Loom's bundled theme in as a starting point rather than leaving
+    # templates/ empty. (build/ still falls back to the bundled theme for
+    # any file this directory doesn't have, e.g. if one is deleted later.)
+    shutil.copytree(DEFAULT_THEME_DIR, site_root / "templates", dirs_exist_ok=True)
 
     (site_root / "loom.toml").write_text(DEFAULT_CONFIG, encoding="utf-8")
     (site_root / "content" / "posts" / "my-first-post.md").write_text(

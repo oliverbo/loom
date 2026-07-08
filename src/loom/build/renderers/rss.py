@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, time, timezone
+from datetime import UTC, date, datetime, time
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -18,7 +18,7 @@ def _rfc822(value: date) -> str:
     """RSS 2.0 requires RFC 822 dates; posts only carry a date (no time
     of day), so we anchor each item at midnight UTC.
     """
-    as_datetime = datetime.combine(value, time.min, tzinfo=timezone.utc)
+    as_datetime = datetime.combine(value, time.min, tzinfo=UTC)
     return as_datetime.strftime("%a, %d %b %Y %H:%M:%S %z")
 
 
