@@ -7,4 +7,6 @@ __pycache__/
 dist/
 
 # Loom build output is always disposable — never commit it.
-build/
+# Anchored to the repo root: unlike "build/", "/build/" won't match
+# src/loom/build/, the actual renderer package.
+/build/
