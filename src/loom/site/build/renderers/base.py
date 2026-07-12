@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Protocol
 
-from loom.models import Site
+from loom.site.models import Site
 
 
 class Renderer(Protocol):

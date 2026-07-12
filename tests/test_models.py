@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from loom.models import Document
+from loom.site.models import Document
 
 
 def make_document(**overrides) -> Document:

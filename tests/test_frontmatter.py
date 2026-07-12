@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from loom.content.frontmatter import parse_document, split_frontmatter
 from loom.errors import ContentError
+from loom.site.content.frontmatter import parse_document, split_frontmatter
 
 
 def write(tmp_path: Path, text: str) -> Path:

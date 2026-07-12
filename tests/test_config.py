@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from loom.config import load_config
 from loom.errors import ConfigError
+from loom.site.config import load_config
 
 
 def test_load_config_reads_fixture_site(sample_site: Path) -> None:

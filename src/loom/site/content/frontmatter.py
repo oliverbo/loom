@@ -14,7 +14,7 @@ from typing import Any
 import yaml
 
 from loom.errors import ContentError
-from loom.models import Document
+from loom.site.models import Document
 
 FENCE = "---"
 
