@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from loom.errors import LoomError
-from loom.scaffold import init_site
+from loom.site.scaffold import init_site
 
 
 def test_init_creates_expected_structure(tmp_path: Path) -> None:

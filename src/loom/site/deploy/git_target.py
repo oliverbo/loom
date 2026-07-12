@@ -16,8 +16,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from loom.config import DeployConfig
 from loom.errors import DeployError
+from loom.site.config import DeployConfig
 
 DEFAULT_BRANCH = "gh-pages"
 

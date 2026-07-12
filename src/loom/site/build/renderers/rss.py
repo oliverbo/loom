@@ -7,9 +7,9 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from loom.build.renderers.html import post_url
-from loom.models import Site
-from loom.resources import DEFAULT_THEME_DIR
+from loom.site.build.renderers.html import post_url
+from loom.site.models import Site
+from loom.site.resources import DEFAULT_THEME_DIR
 
 MAX_ITEMS = 20
 

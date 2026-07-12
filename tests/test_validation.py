@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from loom.validation import validate_site
+from loom.site.validation import validate_site
 
 
 def test_valid_fixture_site_has_no_errors(sample_site: Path) -> None:

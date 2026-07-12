@@ -7,9 +7,9 @@ registry `loom deploy` looks up the configured target in.
 
 from __future__ import annotations
 
-from loom.deploy.base import DeployTarget
-from loom.deploy.git_target import GitDeployTarget
-from loom.deploy.rsync_target import RsyncDeployTarget
+from loom.site.deploy.base import DeployTarget
+from loom.site.deploy.git_target import GitDeployTarget
+from loom.site.deploy.rsync_target import RsyncDeployTarget
 
 TARGETS: dict[str, type[DeployTarget]] = {
     "rsync": RsyncDeployTarget,

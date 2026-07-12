@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from loom.build.pipeline import build_site
 from loom.errors import ValidationError
+from loom.site.build.pipeline import build_site
 
 
 def test_build_produces_expected_files(sample_site: Path) -> None:

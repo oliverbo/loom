@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Protocol
 
-from loom.config import DeployConfig
+from loom.site.config import DeployConfig
 
 
 class DeployTarget(Protocol):

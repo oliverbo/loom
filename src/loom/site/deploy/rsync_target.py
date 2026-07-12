@@ -16,8 +16,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from loom.config import DeployConfig
 from loom.errors import DeployError
+from loom.site.config import DeployConfig
 
 
 class RsyncDeployTarget:

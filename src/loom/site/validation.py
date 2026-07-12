@@ -10,11 +10,11 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from loom.config import SiteConfig, load_config
-from loom.content.discovery import discover_posts
-from loom.content.frontmatter import parse_document
 from loom.errors import ConfigError, ContentError
-from loom.models import Document
+from loom.site.config import SiteConfig, load_config
+from loom.site.content.discovery import discover_posts
+from loom.site.content.frontmatter import parse_document
+from loom.site.models import Document
 
 IMAGE_REF_PATTERN = re.compile(r"!\[[^\]]*\]\(([^)\s]+)\)")
 

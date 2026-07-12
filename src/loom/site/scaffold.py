@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 
 from loom.errors import LoomError
-from loom.resources import DEFAULT_THEME_DIR
+from loom.site.resources import DEFAULT_THEME_DIR
 
 DEFAULT_CONFIG = """\
 title = "My Site"
