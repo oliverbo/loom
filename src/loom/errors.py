@@ -35,3 +35,7 @@ class ValidationError(LoomError):
 
 class DeployError(LoomError):
     """A deploy target failed to ship the build output."""
+
+
+class ManifestError(LoomError):
+    """A deployment manifest is missing, malformed, or uses an unsupported version."""
