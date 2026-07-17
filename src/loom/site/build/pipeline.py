@@ -3,6 +3,8 @@
 This is what `loom build` calls. It is deliberately a full rebuild every
 time -- no incremental caching in v1 -- because a site this size builds
 in well under a second and correctness is worth more than speed here.
+Incrementality lives entirely in `loom deploy` (see `loom.site.deploy`),
+which compares this build's output manifest against the last deployed one.
 """
 
 from __future__ import annotations
@@ -11,6 +13,7 @@ import shutil
 from pathlib import Path
 
 from loom.errors import ContentError, ValidationError
+from loom.git import get_git_info
 from loom.site.build.assets import copy_assets
 from loom.site.build.renderers.base import Renderer
 from loom.site.build.renderers.html import HtmlRenderer
@@ -18,6 +21,7 @@ from loom.site.build.renderers.rss import RssRenderer
 from loom.site.config import load_config
 from loom.site.content.discovery import discover_posts
 from loom.site.content.frontmatter import parse_document
+from loom.site.deploy.manifest import MANIFEST_FILENAME, build_manifest, write_manifest
 from loom.site.models import Document, Site
 from loom.site.validation import validate_site
 
@@ -64,5 +68,9 @@ def build_site(site_root: Path, *, include_drafts: bool = False) -> Path:
 
     copy_assets(config.resolve(config.static_dir), output_dir / "static")
     copy_assets(config.resolve(config.images_dir), output_dir / "images")
+
+    git_info = get_git_info(site_root)
+    manifest = build_manifest(output_dir, commit=git_info.commit, dirty=git_info.dirty)
+    write_manifest(output_dir / MANIFEST_FILENAME, manifest)
 
     return output_dir
