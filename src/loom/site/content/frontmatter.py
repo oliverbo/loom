@@ -58,8 +58,11 @@ def split_frontmatter(text: str, *, source: Path) -> tuple[dict[str, Any], str]:
     return parsed, body
 
 
-def parse_document(path: Path) -> Document:
-    """Parse a single Markdown source file into a `Document`."""
+def parse_document(path: Path, *, asset_dir: Path | None = None) -> Document:
+    """Parse a single Markdown source file into a `Document`.
+
+    `asset_dir` is passed through untouched -- see `Document.asset_dir`.
+    """
     text = path.read_text(encoding="utf-8")
     front_matter, body = split_frontmatter(text, source=path)
 
@@ -87,6 +90,7 @@ def parse_document(path: Path) -> Document:
         source_path=path,
         body_markdown=body,
         extra=extra,
+        asset_dir=asset_dir,
     )
 
 

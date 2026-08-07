@@ -12,7 +12,7 @@ from pathlib import Path
 
 from loom.errors import ConfigError, ContentError
 from loom.site.config import SiteConfig, load_config
-from loom.site.content.discovery import discover_posts
+from loom.site.content.discovery import bundle_assets, discover_posts
 from loom.site.content.frontmatter import parse_document
 from loom.site.models import Document
 
@@ -33,17 +33,28 @@ def validate_site(site_root: Path) -> list[str]:
         errors.append(f"Templates directory not found: {templates_dir}")
 
     content_dir = config.resolve(config.content_dir)
-    post_paths = discover_posts(content_dir)
+    try:
+        sources = discover_posts(content_dir)
+    except ContentError as exc:
+        # Can't discover the rest of `posts/` without a valid listing, so
+        # this one error is all we can report this run -- a narrower
+        # guarantee than usual for this function, but "abort with an
+        # error" is the documented behavior for an ambiguous post
+        # directory, and the message lists every file found so a fix is
+        # still a single round-trip.
+        errors.append(str(exc))
+        return errors
 
     documents: list[Document] = []
-    for path in post_paths:
+    for source in sources:
         try:
-            documents.append(parse_document(path))
+            documents.append(parse_document(source.md_path, asset_dir=source.asset_dir))
         except ContentError as exc:
             errors.append(str(exc))
 
     errors.extend(_check_slugs(documents))
     errors.extend(_check_images(documents, config))
+    errors.extend(_check_bundle_collisions(documents))
 
     return errors
 
@@ -71,7 +82,25 @@ def _check_images(documents: list[Document], config: SiteConfig) -> list[str]:
         for ref in IMAGE_REF_PATTERN.findall(doc.body_markdown):
             if ref.startswith(("http://", "https://", "//")):
                 continue
-            image_path = images_dir / Path(ref).name
-            if not image_path.is_file():
+            name = Path(ref).name
+            # A bundle post's own directory is checked first, but it can
+            # still fall back to the site-wide images/ dir.
+            candidates = [doc.asset_dir / name] if doc.asset_dir else []
+            candidates.append(images_dir / name)
+            if not any(candidate.is_file() for candidate in candidates):
                 errors.append(f"{doc.source_path}: referenced image not found: {ref}")
+    return errors
+
+
+def _check_bundle_collisions(documents: list[Document]) -> list[str]:
+    errors: list[str] = []
+    for doc in documents:
+        if doc.asset_dir is None:
+            continue
+        for asset in bundle_assets(doc.source_path, doc.asset_dir):
+            if asset.name == "index.html":
+                errors.append(
+                    f"{asset}: bundle asset named 'index.html' collides with "
+                    "the generated post page"
+                )
     return errors
