@@ -56,3 +56,36 @@ def test_build_is_idempotent_and_clears_stale_output(sample_site: Path) -> None:
     build_site(sample_site)
 
     assert not stale_file.exists()
+
+
+def test_build_treats_post_directory_as_a_post_and_copies_its_assets(sample_site: Path) -> None:
+    bundle_dir = sample_site / "content" / "posts" / "my-bundle"
+    bundle_dir.mkdir()
+    (bundle_dir / "my-bundle.md").write_text(
+        "---\ntitle: Bundle\ndate: 2026-01-04\nslug: my-bundle\n---\n"
+        "![a photo](photo.jpg)\n",
+        encoding="utf-8",
+    )
+    image_bytes = b"fake-jpeg-bytes"
+    (bundle_dir / "photo.jpg").write_bytes(image_bytes)
+
+    output_dir = build_site(sample_site)
+
+    assert (output_dir / "my-bundle" / "index.html").is_file()
+    copied_image = output_dir / "my-bundle" / "photo.jpg"
+    assert copied_image.is_file()
+    assert copied_image.read_bytes() == image_bytes
+
+
+def test_build_aborts_on_ambiguous_post_directory(sample_site: Path) -> None:
+    bundle_dir = sample_site / "content" / "posts" / "my-bundle"
+    bundle_dir.mkdir()
+    (bundle_dir / "one.md").write_text(
+        "---\ntitle: One\ndate: 2026-01-04\nslug: one\n---\nBody\n", encoding="utf-8"
+    )
+    (bundle_dir / "two.md").write_text(
+        "---\ntitle: Two\ndate: 2026-01-04\nslug: two\n---\nBody\n", encoding="utf-8"
+    )
+
+    with pytest.raises(ValidationError):
+        build_site(sample_site)

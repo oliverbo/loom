@@ -17,7 +17,9 @@ class ConfigError(LoomError):
 
 
 class ContentError(LoomError):
-    """A content file (front matter or body) could not be parsed."""
+    """A content file (front matter or body) could not be parsed, or a
+    post directory could not be resolved to a single post file.
+    """
 
 
 class ValidationError(LoomError):

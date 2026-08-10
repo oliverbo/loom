@@ -46,8 +46,11 @@ site/
 
 ## Writing posts
 
-Each post is a single Markdown file directly under `content/posts/` (no
-subdirectories) with a `---`-fenced YAML front matter block at the top:
+A post is a single Markdown file under `content/posts/`, either directly
+(`content/posts/my-first-post.md`) or as a **post directory**
+(`content/posts/my-first-post/my-first-post.md`) — see "Post directories"
+below for when to use the latter. Either way it starts with a
+`---`-fenced YAML front matter block:
 
 ```markdown
 ---
@@ -84,6 +87,33 @@ left as-is.
 The source filename itself doesn't need to match the slug — `slug` in the
 front matter is what determines the post's output path — but a matching
 name (e.g. `my-first-post.md`) keeps things easy to navigate.
+
+### Post directories
+
+For a post with its own images, give it a directory instead of a lone
+file:
+
+```text
+content/posts/my-first-post/
+├── my-first-post.md
+└── sunset.jpg
+```
+
+The directory is built exactly like a single-file post — `slug` in its
+front matter still decides the output URL. Images alongside it are
+referenced by bare filename, e.g. `![a photo](sunset.jpg)`, and are
+copied straight into that post's output directory
+(`build/<slug>/sunset.jpg`), so the relative reference resolves as-is; a
+bundle post can also fall back to `images/` for a shared, site-wide image.
+Any file named `index.html` in the directory is rejected, since it would
+collide with the generated post page.
+
+If a post directory contains more than one `.md` file, Loom looks for one
+named after the directory (`my-first-post.md`) to use as the post; every
+other `.md` file in the directory is treated as a non-post file (kept out
+of the build output, like an unpublished draft). An ambiguous directory —
+several `.md` files with none matching the directory name, or none at
+all — makes the build abort with an error rather than guess.
 
 ## Commands
 

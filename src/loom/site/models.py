@@ -38,9 +38,14 @@ class Document:
     source_path: Path
     body_markdown: str
     extra: dict[str, Any] = field(default_factory=dict)
+    asset_dir: Path | None = None
 
     def is_slug_valid(self) -> bool:
         return bool(SLUG_PATTERN.match(self.slug))
+
+    def is_bundle(self) -> bool:
+        """Whether this post is a directory bundle with its own asset dir."""
+        return self.asset_dir is not None
 
 
 @dataclass(frozen=True)

@@ -14,7 +14,7 @@ from pathlib import Path
 
 from loom.errors import ContentError, ValidationError
 from loom.git import get_git_info
-from loom.site.build.assets import copy_assets
+from loom.site.build.assets import copy_assets, copy_bundle_assets
 from loom.site.build.renderers.base import Renderer
 from loom.site.build.renderers.html import HtmlRenderer
 from loom.site.build.renderers.rss import RssRenderer
@@ -44,10 +44,17 @@ def build_site(site_root: Path, *, include_drafts: bool = False) -> Path:
     config = load_config(site_root)
     content_dir = config.resolve(config.content_dir)
 
+    try:
+        sources = discover_posts(content_dir)
+    except ContentError as exc:
+        # validate_site() already checked this; a failure here would mean
+        # the content directory changed between the two passes.
+        raise ValidationError([str(exc)]) from exc
+
     documents: list[Document] = []
-    for path in discover_posts(content_dir):
+    for source in sources:
         try:
-            doc = parse_document(path)
+            doc = parse_document(source.md_path, asset_dir=source.asset_dir)
         except ContentError as exc:
             # validate_site() already checked this; a failure here would
             # mean the file changed between the two passes.
@@ -65,6 +72,15 @@ def build_site(site_root: Path, *, include_drafts: bool = False) -> Path:
 
     for renderer in DEFAULT_RENDERERS:
         renderer.render(site, output_dir)
+
+    for doc in documents:
+        if doc.asset_dir is not None:
+            try:
+                copy_bundle_assets(doc.source_path, doc.asset_dir, output_dir / doc.slug)
+            except ContentError as exc:
+                # Also checked in validate_site(); same "changed between
+                # passes" defense as above.
+                raise ValidationError([str(exc)]) from exc
 
     copy_assets(config.resolve(config.static_dir), output_dir / "static")
     copy_assets(config.resolve(config.images_dir), output_dir / "images")
