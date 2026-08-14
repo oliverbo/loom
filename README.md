@@ -193,7 +193,8 @@ prefix = "blog"  # optional; omit to deploy at the bucket root
 ```
 
 It requires the optional `google-cloud-storage` dependency
-(`pip install loom[gcs]`) and authenticates via Application Default
+(`pip install 'loom[gcs]'` — quote it, since an unquoted `[gcs]` is
+parsed as a glob by zsh) and authenticates via Application Default
 Credentials — run `gcloud auth application-default login`, or set
 `GOOGLE_APPLICATION_CREDENTIALS` to a service account key.
 
