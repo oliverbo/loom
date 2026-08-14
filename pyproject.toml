@@ -13,6 +13,9 @@ dependencies = [
     "markdown-it-py>=3.0",
 ]
 
+[project.optional-dependencies]
+gcs = ["google-cloud-storage>=2.10"]
+
 [project.scripts]
 loom = "loom.cli:app"
 
@@ -27,6 +30,7 @@ packages = ["src/loom"]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
+    "google-cloud-storage>=2.10",
 ]
 
 [tool.ruff]

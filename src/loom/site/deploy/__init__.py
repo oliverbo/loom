@@ -20,6 +20,7 @@ from __future__ import annotations
 from loom.site.deploy.backend import DeploymentBackend
 from loom.site.deploy.base import DeployTarget
 from loom.site.deploy.directory_backend import DirectoryDeploymentBackend
+from loom.site.deploy.gcs_backend import GcsDeploymentBackend
 from loom.site.deploy.git_target import GitDeployTarget
 from loom.site.deploy.rsync_target import RsyncDeployTarget
 
@@ -30,4 +31,5 @@ TARGETS: dict[str, type[DeployTarget]] = {
 
 INCREMENTAL_BACKENDS: dict[str, type[DeploymentBackend]] = {
     "directory": DirectoryDeploymentBackend,
+    "gcs": GcsDeploymentBackend,
 }

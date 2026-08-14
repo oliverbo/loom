@@ -181,6 +181,22 @@ the manifest at `<destination>/.loom-manifest.json`, which stays untouched
 if a deploy fails partway through — the next deploy retries against the
 last known-good state.
 
+The `gcs` target ships the same comparison to a Google Cloud Storage
+bucket, uploading/deleting only changed objects and storing its manifest
+at `<prefix>/.loom-manifest.json` in the bucket:
+
+```toml
+[deploy]
+target = "gcs"
+bucket = "my-site-bucket"
+prefix = "blog"  # optional; omit to deploy at the bucket root
+```
+
+It requires the optional `google-cloud-storage` dependency
+(`pip install loom[gcs]`) and authenticates via Application Default
+Credentials — run `gcloud auth application-default login`, or set
+`GOOGLE_APPLICATION_CREDENTIALS` to a service account key.
+
 `git` and `rsync` remain available as full-sync targets (they always ship
 the complete `build/` output; see `loom/site/deploy/git_target.py` and
 `rsync_target.py`).
