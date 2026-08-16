@@ -198,6 +198,27 @@ parsed as a glob by zsh) and authenticates via Application Default
 Credentials — run `gcloud auth application-default login`, or set
 `GOOGLE_APPLICATION_CREDENTIALS` to a service account key.
 
+**This target uploads objects; it does not by itself give you clean URLs.**
+A request like `https://storage.googleapis.com/<bucket>/posts/hello/` hits
+Cloud Storage's raw object API, which does a literal key lookup and 404s,
+since only `posts/hello/index.html` exists — it does not fall back to an
+index file. To get `/posts/hello/` to resolve automatically, front the
+bucket with one of:
+
+- **Native GCS static website hosting**: name the bucket exactly after
+  your domain, point that domain's DNS at `c.storage.googleapis.com` via
+  CNAME, and set `gcloud storage buckets update gs://<bucket>
+  --web-main-page-suffix=index.html --web-error-page=404.html`. HTTP only
+  — Cloud Storage doesn't terminate HTTPS for custom domains this way.
+- **A Load Balancer + Cloud CDN backend bucket**, for HTTPS and a global
+  CDN in front of the same bucket (the standard production setup, though
+  it still needs its own rule for directory-index resolution).
+
+If you just want a working public site with clean URLs and HTTPS with the
+least setup, consider [Firebase Hosting](https://firebase.google.com/docs/hosting)
+instead — it deploys the `build/` directory directly (not via this `gcs`
+target) and resolves directory-style URLs to `index.html` out of the box.
+
 `git` and `rsync` remain available as full-sync targets (they always ship
 the complete `build/` output; see `loom/site/deploy/git_target.py` and
 `rsync_target.py`).
