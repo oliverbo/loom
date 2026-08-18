@@ -78,6 +78,13 @@ Front matter fields:
 Any other front matter key is preserved (available to custom templates) but
 not otherwise interpreted by Loom.
 
+The index page's blog roll needs an excerpt for each post. Add a
+`<!--more-->` line in the body to mark where the excerpt should end;
+without one, the excerpt defaults to the post's first paragraph. The index
+template (`index.html.j2`) receives this as an `excerpts` dict keyed by
+post slug, alongside a `content` dict with each post's full rendered HTML
+for themes that want a full-text blog roll instead.
+
 Reference images from `images/` with normal Markdown image syntax and just
 the filename, e.g. `![a photo](sunset.jpg)` for `images/sunset.jpg` —
 `loom site validate` checks that every referenced image actually exists.

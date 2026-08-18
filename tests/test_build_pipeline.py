@@ -34,6 +34,28 @@ def test_build_renders_post_content(sample_site: Path) -> None:
     assert "Hello World" in html
 
 
+def test_build_index_shows_excerpt_and_read_more_link(sample_site: Path) -> None:
+    output_dir = build_site(sample_site)
+    html = (output_dir / "index.html").read_text()
+    assert "<strong>first</strong>" in html
+    assert 'href="hello-world/"' in html
+
+
+def test_build_index_excerpt_stops_at_more_marker(sample_site: Path) -> None:
+    (sample_site / "content" / "posts" / "hello-world.md").write_text(
+        "---\ntitle: Hello World\ndate: 2026-01-01\nslug: hello-world\n---\n"
+        "Teaser text.\n\n<!--more-->\n\nThe rest of the post, hidden from the index.\n",
+        encoding="utf-8",
+    )
+    output_dir = build_site(sample_site)
+    index_html = (output_dir / "index.html").read_text()
+    post_html = (output_dir / "hello-world" / "index.html").read_text()
+
+    assert "Teaser text." in index_html
+    assert "hidden from the index" not in index_html
+    assert "hidden from the index" in post_html
+
+
 def test_build_copies_static_assets(sample_site: Path) -> None:
     (sample_site / "static" / "style.css").write_text("body {}", encoding="utf-8")
     output_dir = build_site(sample_site)
