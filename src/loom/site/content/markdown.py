@@ -11,6 +11,19 @@ from markdown_it import MarkdownIt
 
 _md = MarkdownIt("commonmark").enable("table")
 
+EXCERPT_MARKER = "<!--more-->"
+
 
 def render_markdown(text: str) -> str:
     return _md.render(text)
+
+
+def excerpt_markdown(text: str) -> str:
+    """Markdown for a post's excerpt.
+
+    Everything before an explicit `<!--more-->` marker, or the first
+    paragraph if the body has no marker.
+    """
+    if EXCERPT_MARKER in text:
+        return text.split(EXCERPT_MARKER, 1)[0].rstrip()
+    return text.strip().split("\n\n", 1)[0]

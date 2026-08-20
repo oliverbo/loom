@@ -7,7 +7,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from loom.site.config import SiteConfig
-from loom.site.content.markdown import render_markdown
+from loom.site.content.markdown import excerpt_markdown, render_markdown
 from loom.site.models import Document, Site
 from loom.site.resources import DEFAULT_THEME_DIR
 
@@ -40,7 +40,11 @@ class HtmlRenderer:
             )
             (post_dir / "index.html").write_text(html, encoding="utf-8")
 
-        index_html = index_template.render(site=site.config, posts=posts)
+        content = {doc.slug: render_markdown(doc.body_markdown) for doc in posts}
+        excerpts = {doc.slug: render_markdown(excerpt_markdown(doc.body_markdown)) for doc in posts}
+        index_html = index_template.render(
+            site=site.config, posts=posts, content=content, excerpts=excerpts
+        )
         (output_dir / "index.html").write_text(index_html, encoding="utf-8")
 
 
