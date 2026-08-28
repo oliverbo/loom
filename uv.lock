@@ -499,32 +499,42 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+firebase = [
+    { name = "google-auth" },
+    { name = "requests" },
+]
 gcs = [
     { name = "google-cloud-storage" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "google-auth" },
     { name = "google-cloud-storage" },
     { name = "pytest" },
+    { name = "requests" },
     { name = "ruff" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "google-auth", marker = "extra == 'firebase'", specifier = ">=2.0" },
     { name = "google-cloud-storage", marker = "extra == 'gcs'", specifier = ">=2.10" },
     { name = "jinja2", specifier = ">=3.1" },
     { name = "markdown-it-py", specifier = ">=3.0" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "requests", marker = "extra == 'firebase'", specifier = ">=2.0" },
     { name = "typer", specifier = ">=0.12" },
 ]
-provides-extras = ["gcs"]
+provides-extras = ["gcs", "firebase"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "google-auth", specifier = ">=2.0" },
     { name = "google-cloud-storage", specifier = ">=2.10" },
     { name = "pytest", specifier = ">=8.0" },
+    { name = "requests", specifier = ">=2.0" },
     { name = "ruff", specifier = ">=0.6" },
 ]
 
