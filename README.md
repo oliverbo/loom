@@ -222,9 +222,32 @@ bucket with one of:
   it still needs its own rule for directory-index resolution).
 
 If you just want a working public site with clean URLs and HTTPS with the
-least setup, consider [Firebase Hosting](https://firebase.google.com/docs/hosting)
-instead — it deploys the `build/` directory directly (not via this `gcs`
-target) and resolves directory-style URLs to `index.html` out of the box.
+least setup, use the `firebase` target instead — it resolves directory-style
+URLs to `index.html` out of the box and gives free managed SSL on custom
+domains.
+
+The `firebase` target ships to [Firebase Hosting](https://firebase.google.com/docs/hosting)
+via its REST API:
+
+```toml
+[deploy]
+target = "firebase"
+project = "my-firebase-project"
+site = "my-site"  # optional; defaults to `project`
+```
+
+It requires the optional `google-auth` and `requests` dependencies
+(`pip install 'loom[firebase]'`) and authenticates via Application Default
+Credentials — the same `gcloud auth application-default login` /
+`GOOGLE_APPLICATION_CREDENTIALS` setup as `gcs`, not a separate
+`firebase login`.
+
+Unlike `directory`/`gcs`, `firebase` is a full-tree target: Firebase
+Hosting's own deploy protocol is atomic (create a version, declare its
+complete file manifest, upload only the content hashes Firebase doesn't
+already have, finalize, release) and does its own hash-based diffing
+server-side, so there's no Loom-side `Deployment changes:` summary or
+`--dry-run` preview for it — same as `git`/`rsync` below.
 
 `git` and `rsync` remain available as full-sync targets (they always ship
 the complete `build/` output; see `loom/site/deploy/git_target.py` and

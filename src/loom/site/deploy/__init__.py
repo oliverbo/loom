@@ -5,7 +5,8 @@ two families:
 
 - `TARGETS` -- `DeployTarget` (see `base.py`), a full "ship everything"
   sync every deploy. Used by `git` and `rsync`, which already do their own
-  efficient full-tree sync natively.
+  efficient full-tree sync natively, and by `firebase`, whose own deploy
+  protocol does its own content-hash diffing server-side.
 - `INCREMENTAL_BACKENDS` -- `DeploymentBackend` (see `backend.py`), which
   exposes per-file upload/delete so `loom.site.deploy.pipeline` can ship
   only what changed since the last successful deployment, per the manifest
@@ -20,6 +21,7 @@ from __future__ import annotations
 from loom.site.deploy.backend import DeploymentBackend
 from loom.site.deploy.base import DeployTarget
 from loom.site.deploy.directory_backend import DirectoryDeploymentBackend
+from loom.site.deploy.firebase_target import FirebaseDeployTarget
 from loom.site.deploy.gcs_backend import GcsDeploymentBackend
 from loom.site.deploy.git_target import GitDeployTarget
 from loom.site.deploy.rsync_target import RsyncDeployTarget
@@ -27,6 +29,7 @@ from loom.site.deploy.rsync_target import RsyncDeployTarget
 TARGETS: dict[str, type[DeployTarget]] = {
     "rsync": RsyncDeployTarget,
     "git": GitDeployTarget,
+    "firebase": FirebaseDeployTarget,
 }
 
 INCREMENTAL_BACKENDS: dict[str, type[DeploymentBackend]] = {
