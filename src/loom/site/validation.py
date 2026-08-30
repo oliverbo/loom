@@ -32,9 +32,9 @@ def validate_site(site_root: Path) -> list[str]:
     if not templates_dir.is_dir():
         errors.append(f"Templates directory not found: {templates_dir}")
 
-    content_dir = config.resolve(config.content_dir)
+    posts_dir = config.resolve(config.posts_dir)
     try:
-        sources = discover_posts(content_dir)
+        sources = discover_posts(posts_dir)
     except ContentError as exc:
         # Can't discover the rest of `posts/` without a valid listing, so
         # this one error is all we can report this run -- a narrower

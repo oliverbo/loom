@@ -1,4 +1,4 @@
-"""Loading and validating `loom.toml`.
+"""Loading and validating `.loom/loom.toml`.
 
 Config is intentionally permissive: unknown top-level keys and unknown
 `[deploy]` keys are kept rather than rejected, so a site written for an
@@ -15,6 +15,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from loom.errors import ConfigError
+from loom.paths import LOOM_DIR
 
 CONFIG_FILENAME = "loom.toml"
 
@@ -28,7 +29,7 @@ class DeployConfig(BaseModel):
 
 
 class SiteConfig(BaseModel):
-    """The parsed, validated contents of `loom.toml`."""
+    """The parsed, validated contents of `.loom/loom.toml`."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -39,6 +40,7 @@ class SiteConfig(BaseModel):
     language: str = "en"
 
     content_dir: str = "content"
+    posts_dir: str = "content/posts"
     images_dir: str = "images"
     templates_dir: str = "templates"
     static_dir: str = "static"
@@ -55,12 +57,12 @@ class SiteConfig(BaseModel):
 
 
 def load_config(site_root: Path) -> SiteConfig:
-    """Load and validate `loom.toml` from `site_root`.
+    """Load and validate `.loom/loom.toml` from `site_root`.
 
     Raises `ConfigError` if the file is missing, isn't valid TOML, or
     fails schema validation.
     """
-    config_path = site_root / CONFIG_FILENAME
+    config_path = site_root / LOOM_DIR / CONFIG_FILENAME
     if not config_path.is_file():
         raise ConfigError(f"No {CONFIG_FILENAME} found at {config_path}")
 

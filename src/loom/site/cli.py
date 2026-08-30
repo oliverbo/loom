@@ -112,7 +112,9 @@ def deploy(
 
     target_name = config.deploy.target
     if not target_name:
-        typer.secho("No [deploy] target configured in loom.toml.", fg=typer.colors.RED, err=True)
+        typer.secho(
+            "No [deploy] target configured in .loom/loom.toml.", fg=typer.colors.RED, err=True
+        )
         raise typer.Exit(code=1)
     if target_name not in TARGETS and target_name not in INCREMENTAL_BACKENDS:
         typer.secho(f"Unknown deploy target: {target_name!r}", fg=typer.colors.RED, err=True)

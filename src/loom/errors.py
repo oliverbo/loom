@@ -13,7 +13,7 @@ class LoomError(Exception):
 
 
 class ConfigError(LoomError):
-    """`loom.toml` is missing, malformed, or fails schema validation."""
+    """`.loom/loom.toml` is missing, malformed, or fails schema validation."""
 
 
 class ContentError(LoomError):
@@ -41,3 +41,9 @@ class DeployError(LoomError):
 
 class ManifestError(LoomError):
     """A deployment manifest is missing, malformed, or uses an unsupported version."""
+
+
+class NoteError(LoomError):
+    """`loom note add` could not create a note (bad name, unknown template,
+    or a destination that already exists).
+    """

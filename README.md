@@ -15,7 +15,8 @@ always safe to delete.
 ## Status
 
 Early scaffolding. Implemented so far: `loom site init`, `loom site
-validate`, `loom site build`, `loom site preview`, and `loom site deploy`.
+validate`, `loom site build`, `loom site preview`, `loom site deploy`, and
+`loom note add`.
 
 ## Requirements
 
@@ -35,18 +36,20 @@ uv run ruff check .
 
 ```text
 site/
+├── .loom/
+│   └── loom.toml
 ├── content/
 │   └── posts/
 ├── images/
 ├── templates/
 ├── static/
-├── loom.toml
 └── build/          # generated, disposable, gitignored
 ```
 
 ## Writing posts
 
-A post is a single Markdown file under `content/posts/`, either directly
+A post is a single Markdown file under `content/posts/` (configurable via
+`posts_dir` in `loom.toml`), either directly
 (`content/posts/my-first-post.md`) or as a **post directory**
 (`content/posts/my-first-post/my-first-post.md`) — see "Post directories"
 below for when to use the latter. Either way it starts with a
@@ -122,6 +125,52 @@ of the build output, like an unpublished draft). An ambiguous directory —
 several `.md` files with none matching the directory name, or none at
 all — makes the build abort with an error rather than guess.
 
+## Notes
+
+`loom note add` scaffolds a new Markdown+front-matter file from a
+template. Unlike `site`, it works in *any* folder — a folder becomes a
+Loom notes repository the first time you add a note to it, with metadata
+(templates, and — for a `loom site` — its `loom.toml` config) stored in a
+`.loom` directory:
+
+```console
+$ loom note add new-post
+Created new-post.md
+```
+
+The first `loom note add` in a folder auto-creates
+`.loom/templates/default.md`, a blank front-matter skeleton, if
+`.loom/templates` doesn't exist yet. Add your own templates there —
+`.loom/templates/<name>.md` for a single file, or `.loom/templates/<name>/`
+for a directory bundling a Markdown file with sibling asset files (the
+same convention as a site's [post directories](#post-directories)) — and
+select one with `-t`/`--template`:
+
+```console
+$ loom note add trip-report -t travel
+```
+
+`-f`/`--field key=value` (repeatable) sets or overrides a front matter
+field, e.g. `-f "tags=personal, travel" -f draft=true` — `tags` is split
+on commas, `draft` must be `true`/`false`.
+
+`--site` prepopulates the front matter a `loom site` post needs and
+writes the note into that site's configured posts directory (`posts_dir`
+in `loom.toml`, `content/posts` by default) instead of directly into the
+given folder: `title` is derived from the note's name if not already set
+(via `-f` or the template), and `slug` is derived from the title. The
+site is then validated (`loom note add` reuses `loom site validate`), so
+a duplicate slug is caught immediately — the note is still created either
+way, but the command exits non-zero if validation fails:
+
+```console
+$ loom note add hello-world --site
+Created content/posts/hello-world.md
+```
+
+`loom note add` makes sure it never overwrites an existing file or
+directory — pick a different name (or `-t`) if one already exists.
+
 ## Commands
 
 - `loom site init [path]` — scaffold a new site.
@@ -137,6 +186,13 @@ all — makes the build abort with an error rather than guess.
     or saving a manifest.
   - `--allow-dirty` — deploy even if the Git working tree has uncommitted
     changes (normally rejected).
+- `loom note add NAME [path]` — add a new note from a template. See
+  "Notes" above.
+  - `-t`, `--template` — template name in `.loom/templates` (default:
+    `default`).
+  - `-f`, `--field key=value` — set a front matter field (repeatable).
+  - `--site` — prepopulate front matter for a site post and validate the
+    site afterward.
 
 ## Deployment
 
