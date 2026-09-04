@@ -38,7 +38,10 @@ dev = [
 ]
 
 [tool.uv.sources]
-writer-md = { git = "https://github.com/oliverbo/writer-md" }
+# Pinned to a tagged release, not `main` -- so picking up a writer-md fix
+# is always its own deliberate, reviewable bump here, not a side effect
+# of the next `uv lock`.
+writer-md = { git = "https://github.com/oliverbo/writer-md", tag = "v0.1.0" }
 
 [tool.ruff]
 line-length = 100

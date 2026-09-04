@@ -527,7 +527,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", marker = "extra == 'firebase'", specifier = ">=2.0" },
     { name = "typer", specifier = ">=0.12" },
-    { name = "writer-md", git = "https://github.com/oliverbo/writer-md" },
+    { name = "writer-md", git = "https://github.com/oliverbo/writer-md?tag=v0.1.0" },
 ]
 provides-extras = ["gcs", "firebase"]
 
@@ -1017,7 +1017,7 @@ wheels = [
 [[package]]
 name = "writer-md"
 version = "0.1.0"
-source = { git = "https://github.com/oliverbo/writer-md#d8e31b977115c882b0288db1a7145e370dca8784" }
+source = { git = "https://github.com/oliverbo/writer-md?tag=v0.1.0#d8e31b977115c882b0288db1a7145e370dca8784" }
 dependencies = [
     { name = "markdown-it-py" },
     { name = "pyyaml" },
