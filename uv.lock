@@ -1017,7 +1017,7 @@ wheels = [
 [[package]]
 name = "writer-md"
 version = "0.1.0"
-source = { git = "https://github.com/oliverbo/writer-md#f3ffd757e23032db223977925d6a8f9f8a3e8d83" }
+source = { git = "https://github.com/oliverbo/writer-md#d8e31b977115c882b0288db1a7145e370dca8784" }
 dependencies = [
     { name = "markdown-it-py" },
     { name = "pyyaml" },
