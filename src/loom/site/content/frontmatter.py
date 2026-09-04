@@ -2,7 +2,8 @@
 into a `Document`.
 
 This is the one place that understands the on-disk file format, so that
-`Document` construction elsewhere never has to think about `---` fences.
+`Document` construction elsewhere never has to think about `---` fences,
+iA Writer content blocks, annotations, or `[%variable]` substitution.
 """
 
 from __future__ import annotations
@@ -11,12 +12,16 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-import yaml
+from writer_md import (
+    expand_content_blocks,
+    split_front_matter,
+    strip_annotations,
+    substitute_variables,
+)
+from writer_md.errors import WriterMdError
 
 from loom.errors import ContentError
 from loom.site.models import Document
-
-FENCE = "---"
 
 # Front matter keys that map directly onto named `Document` fields.
 # Anything else in the front matter is preserved in `Document.extra`.
@@ -29,41 +34,25 @@ def split_frontmatter(text: str, *, source: Path) -> tuple[dict[str, Any], str]:
     Raises `ContentError` if the file doesn't start with a `---` fenced
     YAML block, or if that block isn't a mapping.
     """
-    lines = text.splitlines(keepends=True)
-    if not lines or lines[0].strip() != FENCE:
-        raise ContentError(f"{source}: missing YAML front matter (no leading '---')")
-
-    closing_index = None
-    for i, line in enumerate(lines[1:], start=1):
-        if line.strip() == FENCE:
-            closing_index = i
-            break
-
-    if closing_index is None:
-        raise ContentError(f"{source}: front matter is never closed with '---'")
-
-    raw_yaml = "".join(lines[1:closing_index])
-    body = "".join(lines[closing_index + 1 :]).lstrip("\n")
-
     try:
-        parsed = yaml.safe_load(raw_yaml)
-    except yaml.YAMLError as exc:
-        raise ContentError(f"{source}: front matter is not valid YAML: {exc}") from exc
-
-    if parsed is None:
-        parsed = {}
-    if not isinstance(parsed, dict):
-        raise ContentError(f"{source}: front matter must be a mapping, got {type(parsed).__name__}")
-
-    return parsed, body
+        return split_front_matter(text, source=source, required=True)
+    except WriterMdError as exc:
+        raise ContentError(str(exc)) from exc
 
 
 def parse_document(path: Path, *, asset_dir: Path | None = None) -> Document:
     """Parse a single Markdown source file into a `Document`.
 
     `asset_dir` is passed through untouched -- see `Document.asset_dir`.
+
+    The body is expanded for iA Writer content blocks (bare file
+    references to images, CSVs, and included text) and `[%variable]`
+    placeholders before being stored on the `Document`; references may
+    resolve to any file under `asset_dir` for a post directory, or under
+    this file's own directory otherwise. A trailing annotations block, if
+    present, is stripped first.
     """
-    text = path.read_text(encoding="utf-8")
+    text = strip_annotations(path.read_text(encoding="utf-8"))
     front_matter, body = split_frontmatter(text, source=path)
 
     missing = [key for key in ("title", "date", "slug") if key not in front_matter]
@@ -78,6 +67,13 @@ def parse_document(path: Path, *, asset_dir: Path | None = None) -> Document:
     draft = front_matter.get("draft", False)
     if not isinstance(draft, bool):
         raise ContentError(f"{path}: 'draft' must be true or false")
+
+    root = asset_dir if asset_dir is not None else path.parent
+    try:
+        expanded = expand_content_blocks(body, current_file=path, root=root, metadata=front_matter)
+        body = substitute_variables(expanded, front_matter)
+    except WriterMdError as exc:
+        raise ContentError(f"{path}: {exc}") from exc
 
     extra = {k: v for k, v in front_matter.items() if k not in KNOWN_KEYS}
 

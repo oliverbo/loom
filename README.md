@@ -199,6 +199,27 @@ Created content/posts/hello-world.md
 `loom note add` makes sure it never overwrites an existing file or
 directory — pick a different name (or `-t`) if one already exists.
 
+### iA Writer Markdown flavor
+
+Post bodies are parsed with [writer-md](https://github.com/oliverbo/writer-md),
+adding a few [iA Writer](https://ia.net/writer)-specific conventions on top of
+plain Markdown:
+
+- **Content blocks** — a bare file reference on its own line (`photo.jpg`,
+  `data.csv`, `/notes.md`) is expanded in place: images become `![]()`
+  Markdown, CSVs become tables, and other Markdown/text files are included
+  recursively. A reference must resolve to a file under the post's own
+  directory (its bundle directory, or the file's own folder for a
+  single-file post) — see [iA Writer's content block
+  spec](https://ia.net/writer/support/general/markdown-content-block).
+  Ordinary `![]()` image syntax that isn't a content block, e.g. a
+  site-wide `images/` reference, is left untouched.
+- **`[%variable]` substitution** — front matter values are available in the
+  body as `[%key]` placeholders (e.g. `[%author]`, matched
+  case-insensitively). A placeholder with no matching key is left as-is.
+- **Annotations** — a trailing iA Writer Annotations block is stripped
+  before the post is parsed.
+
 ## Commands
 
 - `loom site init [path]` — scaffold a new site.

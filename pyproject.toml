@@ -11,6 +11,7 @@ dependencies = [
     "pyyaml>=6.0",
     "jinja2>=3.1",
     "markdown-it-py>=3.0",
+    "writer-md",
 ]
 
 [project.optional-dependencies]
@@ -35,6 +36,12 @@ dev = [
     "google-auth>=2.0",
     "requests>=2.0",
 ]
+
+[tool.uv.sources]
+# Pinned to a tagged release, not `main` -- so picking up a writer-md fix
+# is always its own deliberate, reviewable bump here, not a side effect
+# of the next `uv lock`.
+writer-md = { git = "https://github.com/oliverbo/writer-md", tag = "v0.1.0" }
 
 [tool.ruff]
 line-length = 100
