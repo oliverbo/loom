@@ -22,20 +22,19 @@ class PostSource:
     asset_dir: Path | None = None
 
 
-def discover_posts(content_dir: Path) -> list[PostSource]:
-    """Return all posts, sorted for deterministic builds.
+def discover_posts(posts_dir: Path) -> list[PostSource]:
+    """Return all posts under `posts_dir`, sorted for deterministic builds.
 
-    A post is either a `.md` file directly in `posts/`, or a subdirectory
-    of `posts/` (a "post directory") resolved to a single Markdown file by
-    `_resolve_post_directory`. Dotfiles/dot-directories (`.DS_Store`,
-    `.gitkeep`, ...) are ignored. A symlinked directory under `posts/` is
-    treated as a post directory like any other (default `Path.is_dir()`
-    behavior; not specially handled).
+    A post is either a `.md` file directly in `posts_dir`, or a
+    subdirectory of it (a "post directory") resolved to a single Markdown
+    file by `_resolve_post_directory`. Dotfiles/dot-directories
+    (`.DS_Store`, `.gitkeep`, ...) are ignored. A symlinked directory under
+    `posts_dir` is treated as a post directory like any other (default
+    `Path.is_dir()` behavior; not specially handled).
 
     Raises `ContentError` if a post directory can't be resolved to a
     single post file.
     """
-    posts_dir = content_dir / "posts"
     if not posts_dir.is_dir():
         return []
 

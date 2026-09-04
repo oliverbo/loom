@@ -11,7 +11,7 @@ runner = CliRunner()
 
 
 def _add_directory_deploy_target(site: Path, *, destination: str = "../deployed") -> None:
-    with (site / "loom.toml").open("a", encoding="utf-8") as handle:
+    with (site / ".loom" / "loom.toml").open("a", encoding="utf-8") as handle:
         handle.write(f'\n[deploy]\ntarget = "directory"\ndestination = "{destination}"\n')
 
 

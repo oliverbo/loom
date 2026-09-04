@@ -56,6 +56,21 @@ def test_build_index_excerpt_stops_at_more_marker(sample_site: Path) -> None:
     assert "hidden from the index" in post_html
 
 
+def test_build_honors_custom_posts_dir(sample_site: Path) -> None:
+    with (sample_site / ".loom" / "loom.toml").open("a", encoding="utf-8") as handle:
+        handle.write('\nposts_dir = "notes"\n')
+    (sample_site / "templates").mkdir(exist_ok=True)
+    (sample_site / "notes").mkdir()
+    (sample_site / "notes" / "custom-post.md").write_text(
+        "---\ntitle: Custom\ndate: 2026-01-01\nslug: custom\n---\nBody\n", encoding="utf-8"
+    )
+
+    output_dir = build_site(sample_site)
+
+    assert (output_dir / "custom" / "index.html").is_file()
+    assert not (output_dir / "hello-world").exists()
+
+
 def test_build_copies_static_assets(sample_site: Path) -> None:
     (sample_site / "static" / "style.css").write_text("body {}", encoding="utf-8")
     output_dir = build_site(sample_site)

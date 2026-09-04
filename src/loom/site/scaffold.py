@@ -6,6 +6,8 @@ import shutil
 from pathlib import Path
 
 from loom.errors import LoomError
+from loom.paths import LOOM_DIR
+from loom.site.config import CONFIG_FILENAME
 from loom.site.resources import DEFAULT_THEME_DIR
 
 DEFAULT_CONFIG = """\
@@ -34,11 +36,12 @@ Welcome to your new Loom site. Edit this file at
 def init_site(site_root: Path, *, today: str) -> None:
     """Create the standard Loom directory structure at `site_root`.
 
-    Refuses to run if `loom.toml` already exists, so `loom init` can't
-    silently clobber an existing site.
+    Refuses to run if `.loom/loom.toml` already exists, so `loom init`
+    can't silently clobber an existing site.
     """
-    if (site_root / "loom.toml").exists():
-        raise LoomError(f"{site_root} already contains a loom.toml; refusing to overwrite")
+    config_path = site_root / LOOM_DIR / CONFIG_FILENAME
+    if config_path.exists():
+        raise LoomError(f"{config_path} already exists; refusing to overwrite")
 
     for directory in ("content/posts", "images", "static"):
         (site_root / directory).mkdir(parents=True, exist_ok=True)
@@ -49,7 +52,8 @@ def init_site(site_root: Path, *, today: str) -> None:
     # any file this directory doesn't have, e.g. if one is deleted later.)
     shutil.copytree(DEFAULT_THEME_DIR, site_root / "templates", dirs_exist_ok=True)
 
-    (site_root / "loom.toml").write_text(DEFAULT_CONFIG, encoding="utf-8")
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(DEFAULT_CONFIG, encoding="utf-8")
     (site_root / "content" / "posts" / "my-first-post.md").write_text(
         SAMPLE_POST.format(date=today), encoding="utf-8"
     )

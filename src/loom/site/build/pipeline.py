@@ -42,10 +42,10 @@ def build_site(site_root: Path, *, include_drafts: bool = False) -> Path:
         raise ValidationError(errors)
 
     config = load_config(site_root)
-    content_dir = config.resolve(config.content_dir)
+    posts_dir = config.resolve(config.posts_dir)
 
     try:
-        sources = discover_posts(content_dir)
+        sources = discover_posts(posts_dir)
     except ContentError as exc:
         # validate_site() already checked this; a failure here would mean
         # the content directory changed between the two passes.
