@@ -22,6 +22,34 @@ validate`, `loom site build`, `loom site preview`, and `loom site deploy`.
 - Python 3.11+
 - [`uv`](https://docs.astral.sh/uv/)
 
+## Installation
+
+Loom isn't published to a package index — install it as a global command
+directly from a clone with `uv` (no `pip` needed; `uv` manages its own
+Python and dependencies independently of whatever's on your system):
+
+```bash
+git clone git@github.com:oliverbo/loom.git
+cd loom
+uv tool install .
+```
+
+This puts `loom` on your `PATH` (`~/.local/bin/loom` by default), separate
+from any project's own virtual environment. For the optional deploy
+targets, install with their extras:
+
+```bash
+uv tool install ".[gcs,firebase]"
+```
+
+`uv tool install` copies the package in at install time; it won't pick up
+later changes to your checkout on its own. After pulling or finishing work
+on Loom itself, reinstall to update the command:
+
+```bash
+uv tool install --force ".[gcs,firebase]"
+```
+
 ## Development
 
 ```bash
@@ -199,11 +227,11 @@ bucket = "my-site-bucket"
 prefix = "blog"  # optional; omit to deploy at the bucket root
 ```
 
-It requires the optional `google-cloud-storage` dependency
-(`pip install 'loom[gcs]'` — quote it, since an unquoted `[gcs]` is
-parsed as a glob by zsh) and authenticates via Application Default
-Credentials — run `gcloud auth application-default login`, or set
-`GOOGLE_APPLICATION_CREDENTIALS` to a service account key.
+It requires the optional `google-cloud-storage` dependency — install with
+the `gcs` extra (`uv tool install ".[gcs]"`, see Installation above) — and
+authenticates via Application Default Credentials: run `gcloud auth
+application-default login`, or set `GOOGLE_APPLICATION_CREDENTIALS` to a
+service account key.
 
 **This target uploads objects; it does not by itself give you clean URLs.**
 A request like `https://storage.googleapis.com/<bucket>/posts/hello/` hits
@@ -236,9 +264,10 @@ project = "my-firebase-project"
 site = "my-site"  # optional; defaults to `project`
 ```
 
-It requires the optional `google-auth` and `requests` dependencies
-(`pip install 'loom[firebase]'`) and authenticates via Application Default
-Credentials — the same `gcloud auth application-default login` /
+It requires the optional `google-auth` and `requests` dependencies —
+install with the `firebase` extra (`uv tool install ".[firebase]"`, see
+Installation above) — and authenticates via Application Default
+Credentials, the same `gcloud auth application-default login` /
 `GOOGLE_APPLICATION_CREDENTIALS` setup as `gcs`, not a separate
 `firebase login`.
 
