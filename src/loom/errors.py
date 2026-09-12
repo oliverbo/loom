@@ -44,6 +44,7 @@ class ManifestError(LoomError):
 
 
 class NoteError(LoomError):
-    """`loom note add` could not create a note (bad name, unknown template,
-    or a destination that already exists).
+    """`loom note add` or `loom note import` could not create/import a
+    note (bad name, unknown template, a missing or ambiguous import
+    source, or a destination that already exists).
     """
