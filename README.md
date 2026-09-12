@@ -199,6 +199,29 @@ Created content/posts/hello-world.md
 `loom note add` makes sure it never overwrites an existing file or
 directory — pick a different name (or `-t`) if one already exists.
 
+`loom note import PATH` brings an existing Markdown file or directory into
+the current site's posts directory, filling in any missing `title`,
+`date`, `slug`, `draft`, or `tags` front matter — unlike `note add
+--site`, it always targets a site (there's no plain "notes repository"
+mode for `import`). A directory is copied in as a post bundle, including
+any subdirectories and other `.md` files alongside the main post; if it
+has more than one `.md` file, the one matching the directory's name is
+treated as the post (the same rule `loom site build` uses for [post
+directories](#post-directories)) — ambiguous or empty directories are
+rejected. Case-mismatched front matter keys (`Title` vs `title`) are
+folded to Loom's spelling; if there's no `date` in the front matter, a
+leading `YYYY-MM-DD` in the file or directory name is used, falling back
+to the file's last-modified time:
+
+```console
+$ loom note import ~/old-blog/2024-01-15-hello-world.md
+Imported content/posts/hello-world.md
+```
+
+Like `add`, `import` never overwrites an existing destination, and keeps
+the imported note even if it fails `loom site validate` afterward (e.g. a
+duplicate slug) — the command just exits non-zero in that case.
+
 ### iA Writer Markdown flavor
 
 Post bodies are parsed with [writer-md](https://github.com/oliverbo/writer-md),
@@ -242,6 +265,9 @@ plain Markdown:
   - `-f`, `--field key=value` — set a front matter field (repeatable).
   - `--site` — prepopulate front matter for a site post and validate the
     site afterward.
+- `loom note import PATH [path]` — import an existing post file or
+  directory into the site's posts directory, backfilling required front
+  matter. See "Notes" above.
 
 ## Deployment
 

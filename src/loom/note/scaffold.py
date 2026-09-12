@@ -93,7 +93,7 @@ def add_note(
         # Only re-serialize when something actually changed -- otherwise
         # a plain `loom note add` would round-trip an untouched template
         # through YAML and turn a blank `title:` into a literal `null`.
-        destination.write_text(_render(front_matter, body), encoding="utf-8")
+        destination.write_text(render_front_matter(front_matter, body), encoding="utf-8")
     else:
         destination.write_text(template_text, encoding="utf-8")
 
@@ -128,6 +128,11 @@ def _fill_site_defaults(front_matter: dict[str, Any], *, name: str, today: str) 
     front_matter.setdefault("tags", [])
 
 
-def _render(front_matter: dict[str, Any], body: str) -> str:
+def render_front_matter(front_matter: dict[str, Any], body: str) -> str:
+    """Serialize `front_matter` and `body` back into `---`-fenced Markdown.
+
+    Shared with `loom.note.importer`, which is the other place that needs
+    to write a note's front matter back out in this exact format.
+    """
     yaml_text = yaml.safe_dump(front_matter, sort_keys=False)
     return f"---\n{yaml_text}---\n\n{body}"
