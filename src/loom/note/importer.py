@@ -29,6 +29,9 @@ from loom.slug import slugify, titleize
 
 _DATE_PREFIX = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:[-_](.+))?$")
 _CANONICAL_BY_LOWER = {key.lower(): key for key in KNOWN_KEYS}
+# Alternate spellings for a canonical field, beyond mere case, as seen in
+# other tools' front matter (e.g. Jekyll's `published`/`Published`).
+_ALIASES_BY_LOWER = {"published": "date"}
 
 
 @dataclass(frozen=True)
@@ -50,7 +53,9 @@ def import_note(root: Path, source: Path, *, today: str) -> ImportNoteResult:
     note is written into that site's configured posts directory
     (`posts_dir` in `loom.toml`). Missing `title`, `slug`, `date`,
     `draft`, `tags` front matter is backfilled, and case-differing keys
-    (e.g. `Title`) are folded to the spelling Loom requires. `today` is
+    (e.g. `Title`) are folded to the spelling Loom requires, and a
+    `published`/`Published` field is recognized as an alias for `date`.
+    `today` is
     accepted for parity with `add_note` but is only ever used if a
     `source` somehow has neither existing front matter, a dated name, nor
     a readable modification time.
@@ -174,17 +179,34 @@ def _split_date_prefix(name: str) -> tuple[str | None, str]:
 
 
 def _normalize_keys(raw: dict[str, Any]) -> dict[str, Any]:
-    """Fold case-differing front matter keys to Loom's canonical spelling.
+    """Fold case-differing and aliased front matter keys to Loom's
+    canonical spelling.
 
     A key that matches one of `KNOWN_KEYS` case-insensitively (e.g.
-    `Title`, `DATE`) is rewritten to its canonical (lowercase) form; any
-    other key is preserved untouched, including its original casing --
-    same as `Document.extra`'s treatment of unrecognized front matter.
+    `Title`, `DATE`) is rewritten to its canonical (lowercase) form. A
+    key matching `_ALIASES_BY_LOWER` (currently just `published`/
+    `Published`, for `date`) is folded the same way, but only if the
+    canonical field isn't *also* present under its own name -- an
+    explicit `date` always wins over a `published` alias rather than
+    being silently overwritten by it. Any other key is preserved
+    untouched, including its original casing -- same as `Document.extra`'s
+    treatment of unrecognized front matter.
     """
     normalized: dict[str, Any] = {}
+    aliased: dict[str, Any] = {}
     for key, value in raw.items():
-        canonical = _CANONICAL_BY_LOWER.get(key.strip().lower())
-        normalized[canonical or key] = value
+        lowered = key.strip().lower()
+        canonical = _CANONICAL_BY_LOWER.get(lowered)
+        if canonical:
+            normalized[canonical] = value
+            continue
+        alias_target = _ALIASES_BY_LOWER.get(lowered)
+        if alias_target:
+            aliased.setdefault(alias_target, value)
+        else:
+            normalized[key] = value
+    for canonical, value in aliased.items():
+        normalized.setdefault(canonical, value)
     return normalized
 
 

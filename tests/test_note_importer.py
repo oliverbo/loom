@@ -96,6 +96,44 @@ def test_case_mismatched_keys_normalized_to_canonical_spelling(
     assert "Slug" not in meta
 
 
+def test_published_field_recognized_as_date_alias(sample_site: Path, tmp_path: Path) -> None:
+    content = "---\ntitle: Old Post\npublished: '2019-04-01'\n---\n\nBody.\n"
+    source = tmp_path / "old-post.md"
+    source.write_text(content, encoding="utf-8")
+
+    result = import_note(sample_site, source, today=TODAY)
+
+    meta = _read_front_matter(result.path)
+    assert meta["date"] == "2019-04-01"
+    assert "published" not in meta
+
+
+def test_capitalized_published_field_recognized_as_date_alias(
+    sample_site: Path, tmp_path: Path
+) -> None:
+    content = "---\ntitle: Old Post\nPublished: '2019-04-01'\n---\n\nBody.\n"
+    source = tmp_path / "old-post.md"
+    source.write_text(content, encoding="utf-8")
+
+    result = import_note(sample_site, source, today=TODAY)
+
+    meta = _read_front_matter(result.path)
+    assert meta["date"] == "2019-04-01"
+    assert "Published" not in meta
+
+
+def test_explicit_date_wins_over_published_alias(sample_site: Path, tmp_path: Path) -> None:
+    content = "---\ntitle: Old Post\ndate: '2020-01-01'\npublished: '2019-04-01'\n---\n\nBody.\n"
+    source = tmp_path / "old-post.md"
+    source.write_text(content, encoding="utf-8")
+
+    result = import_note(sample_site, source, today=TODAY)
+
+    meta = _read_front_matter(result.path)
+    assert meta["date"] == "2020-01-01"
+    assert "published" not in meta
+
+
 def test_date_extracted_from_filename_with_title_suffix(sample_site: Path, tmp_path: Path) -> None:
     source = tmp_path / "2024-01-15-my-old-post.md"
     source.write_text("Body.\n", encoding="utf-8")

@@ -209,7 +209,8 @@ has more than one `.md` file, the one matching the directory's name is
 treated as the post (the same rule `loom site build` uses for [post
 directories](#post-directories)) — ambiguous or empty directories are
 rejected. Case-mismatched front matter keys (`Title` vs `title`) are
-folded to Loom's spelling; if there's no `date` in the front matter, a
+folded to Loom's spelling, and `published`/`Published` is recognized as
+an alias for `date`. If there's still no `date` in the front matter, a
 leading `YYYY-MM-DD` in the file or directory name is used, falling back
 to the file's last-modified time:
 
