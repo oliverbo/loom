@@ -28,6 +28,19 @@ from loom.site.validation import validate_site
 from loom.slug import slugify, titleize
 
 _DATE_PREFIX = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:[-_](.+))?$")
+# Tried, in order, against a front matter `date`/`published` string that
+# isn't already a bare ISO date (which `date.fromisoformat` handles on
+# its own) -- common alternate formats seen in other tools' exports.
+_DATE_FORMATS = (
+    "%m/%d/%Y",  # 7/20/2026 (US)
+    "%m-%d-%Y",  # 7-20-2026
+    "%Y/%m/%d",  # 2026/07/20
+    "%B %d, %Y",  # July 20, 2026
+    "%B %d %Y",  # July 20 2026
+    "%d %B %Y",  # 20 July 2026
+    "%b %d, %Y",  # Jul 20, 2026
+    "%b %d %Y",  # Jul 20 2026
+)
 _CANONICAL_BY_LOWER = {key.lower(): key for key in KNOWN_KEYS}
 # Alternate spellings for a canonical field, beyond mere case, as seen in
 # other tools' front matter (e.g. Jekyll's `published`/`Published`).
@@ -217,10 +230,16 @@ def _resolve_date(
     `date_from_name` (from a filename/dirname prefix, if any) ->
     `mtime_source`'s last-modified time -> `today`, as an
     unreachable-in-practice final fallback.
+
+    An existing `date` that can't be parsed in any recognized format is
+    treated the same as a missing one (falls through to the rest of the
+    chain) rather than aborting the whole import over one bad field.
     """
     existing = front_matter.get("date")
     if existing:
-        return _coerce_date(existing)
+        coerced = _try_coerce_date(existing)
+        if coerced is not None:
+            return coerced
 
     if date_from_name is not None:
         return date_from_name
@@ -232,25 +251,52 @@ def _resolve_date(
     return date_cls.fromtimestamp(mtime).isoformat()
 
 
-def _coerce_date(value: Any) -> str:
+def _try_coerce_date(value: Any) -> str | None:
+    """Coerce a front matter `date`/`published` value to an ISO string.
+
+    Accepts a YAML-native `date`/`datetime` (e.g. an unquoted `2024-01-15`
+    front matter value, which PyYAML parses as a `date` on its own), a
+    bare ISO string, or one of `_DATE_FORMATS`'s common alternate
+    spellings (e.g. `7/20/2026`). Returns `None`, rather than raising, if
+    `value` doesn't match any of them.
+    """
     if isinstance(value, datetime):
         return value.date().isoformat()
     if isinstance(value, date_cls):
         return value.isoformat()
-    return str(value)
+
+    text = str(value).strip()
+    try:
+        return date_cls.fromisoformat(text).isoformat()
+    except ValueError:
+        pass
+
+    for fmt in _DATE_FORMATS:
+        try:
+            return datetime.strptime(text, fmt).date().isoformat()
+        except ValueError:
+            continue
+
+    return None
 
 
 def _fill_defaults(front_matter: dict[str, Any], *, name: str, resolved_date: str) -> None:
-    """Fill missing/blank `title`, `slug`, `date`, `draft`, `tags`.
+    """Fill missing/blank `title` and `slug`; set `date`; default `draft`
+    and `tags`.
 
     Order matters: `title` must be resolved before `slug` is derived from
-    it, same as `scaffold._fill_site_defaults`.
+    it, same as `scaffold._fill_site_defaults`. Unlike `title`/`slug`,
+    `date` is always (re)written to `resolved_date` rather than only when
+    missing -- `resolved_date` already encodes "keep the existing date if
+    it parsed, otherwise fall back" (see `_resolve_date`), and a
+    non-ISO-but-parseable existing value (e.g. `7/20/2026`) still needs
+    to be normalized to the ISO string Loom's own front matter schema
+    requires.
     """
     if not front_matter.get("title"):
         front_matter["title"] = titleize(name)
     if not front_matter.get("slug"):
         front_matter["slug"] = slugify(str(front_matter["title"]))
-    if not front_matter.get("date"):
-        front_matter["date"] = resolved_date
+    front_matter["date"] = resolved_date
     front_matter.setdefault("draft", False)
     front_matter.setdefault("tags", [])

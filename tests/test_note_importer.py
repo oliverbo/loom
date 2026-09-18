@@ -134,6 +134,45 @@ def test_explicit_date_wins_over_published_alias(sample_site: Path, tmp_path: Pa
     assert "published" not in meta
 
 
+@pytest.mark.parametrize(
+    "raw_date",
+    [
+        "7/20/2026",
+        "07/20/2026",
+        "7-20-2026",
+        "2026/07/20",
+        "July 20, 2026",
+        "July 20 2026",
+        "20 July 2026",
+        "Jul 20, 2026",
+    ],
+)
+def test_common_non_iso_date_formats_are_recognized(
+    sample_site: Path, tmp_path: Path, raw_date: str
+) -> None:
+    content = f"---\ntitle: Old Post\ndate: '{raw_date}'\n---\n\nBody.\n"
+    source = tmp_path / "old-post.md"
+    source.write_text(content, encoding="utf-8")
+
+    result = import_note(sample_site, source, today=TODAY)
+
+    meta = _read_front_matter(result.path)
+    assert meta["date"] == "2026-07-20"
+
+
+def test_unparseable_existing_date_falls_back_to_mtime(sample_site: Path, tmp_path: Path) -> None:
+    source = tmp_path / "old-post.md"
+    source.write_text(
+        "---\ntitle: Old Post\ndate: not-a-real-date\n---\n\nBody.\n", encoding="utf-8"
+    )
+    _set_mtime(source, "2017-08-09")
+
+    result = import_note(sample_site, source, today=TODAY)
+
+    meta = _read_front_matter(result.path)
+    assert meta["date"] == "2017-08-09"
+
+
 def test_date_extracted_from_filename_with_title_suffix(sample_site: Path, tmp_path: Path) -> None:
     source = tmp_path / "2024-01-15-my-old-post.md"
     source.write_text("Body.\n", encoding="utf-8")

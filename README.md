@@ -210,9 +210,12 @@ treated as the post (the same rule `loom site build` uses for [post
 directories](#post-directories)) — ambiguous or empty directories are
 rejected. Case-mismatched front matter keys (`Title` vs `title`) are
 folded to Loom's spelling, and `published`/`Published` is recognized as
-an alias for `date`. If there's still no `date` in the front matter, a
-leading `YYYY-MM-DD` in the file or directory name is used, falling back
-to the file's last-modified time:
+an alias for `date`. An existing `date`/`published` value is accepted in
+several common formats, not just ISO (`2026-07-20`) — `7/20/2026`,
+`2026/07/20`, and `July 20, 2026` all work; an unparseable value is
+treated as if it were missing. If there's still no usable `date` in the
+front matter, a leading `YYYY-MM-DD` in the file or directory name is
+used, falling back to the file's last-modified time:
 
 ```console
 $ loom note import ~/old-blog/2024-01-15-hello-world.md
