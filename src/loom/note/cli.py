@@ -9,6 +9,7 @@ from typing import Any
 import typer
 
 from loom.errors import LoomError, NoteError
+from loom.note.importer import import_note
 from loom.note.scaffold import add_note
 
 app = typer.Typer(help="Manage Loom notes: add notes from templates.")
@@ -51,6 +52,31 @@ def add(
         raise typer.Exit(code=1) from exc
 
     typer.secho(f"Created {result.path}", fg=typer.colors.GREEN)
+
+    if result.validation_errors:
+        for error in result.validation_errors:
+            typer.secho(f"error: {error}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
+
+
+@app.command(name="import")
+def import_(
+    # `Path` isn't in ruff's immutable-type allowlist, so B008 flags this
+    # required-argument default even though it's just as safe as `add`'s
+    # `str`-typed equivalent above.
+    path: Path = typer.Argument(  # noqa: B008
+        ..., help="Path to the .md file or post directory to import."
+    ),
+    root: Path = PathArg,
+) -> None:
+    """Import an existing post (file or directory) into ROOT's posts directory."""
+    try:
+        result = import_note(root, path, today=date.today().isoformat())
+    except LoomError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.secho(f"Imported {result.path}", fg=typer.colors.GREEN)
 
     if result.validation_errors:
         for error in result.validation_errors:
