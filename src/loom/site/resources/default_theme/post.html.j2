@@ -8,6 +8,12 @@
   <article>
     <h1>{{ post.title }}</h1>
     <p><time datetime="{{ post.date.isoformat() }}">{{ post.date.isoformat() }}</time></p>
+    {% if post.featured_photo %}
+    <figure>
+      <img src="{{ post.featured_photo.src }}" alt="{{ post.featured_photo.alt }}">
+      {% if post.featured_photo.caption %}<figcaption>{{ post.featured_photo.caption }}</figcaption>{% endif %}
+    </figure>
+    {% endif %}
     {{ content | safe }}
   </article>
   <p><a href="{{ site.base_url }}">&larr; Back to {{ site.title }}</a></p>

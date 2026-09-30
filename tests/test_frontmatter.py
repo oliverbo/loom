@@ -166,10 +166,138 @@ def test_parse_document_leaves_unresolvable_image_reference_untouched(tmp_path: 
     """A post referencing an image that lives in the site-wide images/ dir
     rather than its own folder must keep working -- see
     `_check_images` in `loom.site.validation`, which allows that fallback.
+
+    The image sits in its own paragraph after some text so it isn't
+    mistaken for a featured photo (see the `featured_photo` tests below).
     """
     path = write(
         tmp_path,
-        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n![shared](shared.png)\n",
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n"
+        "Intro text.\n\n![shared](shared.png)\n",
     )
     doc = parse_document(path)
-    assert doc.body_markdown == "![shared](shared.png)"
+    assert doc.body_markdown == "Intro text.\n\n![shared](shared.png)"
+
+
+def test_parse_document_extracts_featured_photo_below_title_heading(tmp_path: Path) -> None:
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n"
+        "# Hi\n\n![a sunset](sunset.jpg)\n\nBody text.\n",
+    )
+    doc = parse_document(path)
+    assert doc.featured_photo is not None
+    assert doc.featured_photo.src == "sunset.jpg"
+    assert doc.featured_photo.alt == "a sunset"
+    assert doc.featured_photo.caption == ""
+    assert doc.body_markdown == "Body text."
+
+
+def test_parse_document_extracts_featured_photo_with_no_title_heading(tmp_path: Path) -> None:
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n![a sunset](sunset.jpg)\n\nBody text.\n",
+    )
+    doc = parse_document(path)
+    assert doc.featured_photo is not None
+    assert doc.featured_photo.src == "sunset.jpg"
+    assert doc.body_markdown == "Body text."
+
+
+def test_parse_document_extracts_featured_photo_from_bare_content_block(tmp_path: Path) -> None:
+    (tmp_path / "sunset.jpg").write_bytes(b"fake-jpeg")
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\nsunset.jpg\n\nBody text.\n",
+    )
+    doc = parse_document(path)
+    assert doc.featured_photo is not None
+    assert doc.featured_photo.src == "sunset.jpg"
+    assert doc.body_markdown == "Body text."
+
+
+def test_parse_document_featured_photo_keeps_content_block_caption(tmp_path: Path) -> None:
+    (tmp_path / "sunset.jpg").write_bytes(b"fake-jpeg")
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n"
+        'sunset.jpg "A lovely evening"\n\nBody text.\n',
+    )
+    doc = parse_document(path)
+    assert doc.featured_photo is not None
+    assert doc.featured_photo.src == "sunset.jpg"
+    assert doc.featured_photo.alt == "A lovely evening"
+    assert doc.featured_photo.caption == "A lovely evening"
+    assert doc.body_markdown == "Body text."
+
+
+def test_parse_document_featured_photo_unwraps_bracketed_destination(tmp_path: Path) -> None:
+    """A destination wrapped in `<...>` (how a content block renders a
+    path containing spaces) must resolve to the plain path, not the
+    literal `<...>` text.
+    """
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n"
+        "![a sunset](<my sunset.jpg>)\n\nBody text.\n",
+    )
+    doc = parse_document(path)
+    assert doc.featured_photo is not None
+    assert doc.featured_photo.src == "my sunset.jpg"
+
+
+def test_parse_document_featured_photo_disabled_by_front_matter(tmp_path: Path) -> None:
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\nfeatured_photo: false\n---\n"
+        "![a sunset](sunset.jpg)\n\nBody text.\n",
+    )
+    doc = parse_document(path)
+    assert doc.featured_photo is None
+    assert doc.body_markdown == "![a sunset](sunset.jpg)\n\nBody text."
+    assert "featured_photo" not in doc.extra
+
+
+def test_parse_document_rejects_non_bool_featured_photo(tmp_path: Path) -> None:
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\nfeatured_photo: not-a-bool\n---\nBody\n",
+    )
+    with pytest.raises(ContentError, match="'featured_photo' must be true or false"):
+        parse_document(path)
+
+
+def test_parse_document_no_featured_photo_when_first_paragraph_has_other_text(
+    tmp_path: Path,
+) -> None:
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n"
+        "![a sunset](sunset.jpg) and some words.\n\nBody text.\n",
+    )
+    doc = parse_document(path)
+    assert doc.featured_photo is None
+    assert doc.body_markdown == "![a sunset](sunset.jpg) and some words.\n\nBody text."
+
+
+def test_parse_document_no_featured_photo_when_image_is_not_first_paragraph(
+    tmp_path: Path,
+) -> None:
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n"
+        "Intro text.\n\n![a sunset](sunset.jpg)\n",
+    )
+    doc = parse_document(path)
+    assert doc.featured_photo is None
+    assert doc.body_markdown == "Intro text.\n\n![a sunset](sunset.jpg)"
+
+
+def test_parse_document_featured_photo_can_be_the_whole_body(tmp_path: Path) -> None:
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n![a sunset](sunset.jpg)\n",
+    )
+    doc = parse_document(path)
+    assert doc.featured_photo is not None
+    assert doc.body_markdown == ""

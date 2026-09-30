@@ -105,6 +105,7 @@ Front matter fields:
 | `slug`  | yes      | string                  | Must be lowercase alphanumeric with single hyphens (e.g. `my-first-post`), matching `^[a-z0-9]+(-[a-z0-9]+)*$`, and unique across all posts. Determines the output URL (`build/<slug>/index.html`), independent of the source filename. |
 | `tags`  | no       | list of strings         | Defaults to `[]`. |
 | `draft` | no       | boolean                 | Defaults to `false`. Draft posts are excluded from `loom site build` unless `--drafts` is passed. |
+| `featured_photo` | no | boolean | Defaults to `true`. Set to `false` to keep a leading photo inline instead of extracting it — see "Featured photo" below. |
 
 Any other front matter key is preserved (available to custom templates) but
 not otherwise interpreted by Loom.
@@ -121,6 +122,21 @@ the filename, e.g. `![a photo](sunset.jpg)` for `images/sunset.jpg` —
 `loom site validate` checks that every referenced image actually exists.
 External images (`http://`, `https://`, or protocol-relative `//` URLs) are
 left as-is.
+
+### Featured photo
+
+If a photo is the sole content of a post's first paragraph — right below
+the title, whether that's an inline `# Heading` or just the front matter
+`title` — Loom pulls it out of the body and passes it to the templates as
+`post.featured_photo` (`.src`, `.alt`, and `.caption` when the reference
+had a title, e.g. an iA Writer content block's caption) instead of
+rendering it inline. The default theme shows it as a `<figure>` on both
+the post page and the index roll. Set `featured_photo: false` in a post's
+front matter to keep the photo inline instead.
+
+A photo sharing its paragraph with other text, or appearing later in the
+body, is never extracted — only a lone image immediately after the title
+counts.
 
 The source filename itself doesn't need to match the slug — `slug` in the
 front matter is what determines the post's output path — but a matching
