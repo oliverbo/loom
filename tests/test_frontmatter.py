@@ -126,6 +126,42 @@ def test_parse_document_content_block_confined_to_asset_dir(tmp_path: Path) -> N
         parse_document(path, asset_dir=bundle_dir)
 
 
+def test_parse_document_strips_leading_title_heading(tmp_path: Path) -> None:
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n# Hi\nBody text.\n",
+    )
+    doc = parse_document(path)
+    assert doc.body_markdown == "Body text."
+
+
+def test_parse_document_strips_bare_leading_hash(tmp_path: Path) -> None:
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n#\nBody text.\n",
+    )
+    doc = parse_document(path)
+    assert doc.body_markdown == "Body text."
+
+
+def test_parse_document_keeps_leading_subheading(tmp_path: Path) -> None:
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n## Not the title\nBody text.\n",
+    )
+    doc = parse_document(path)
+    assert doc.body_markdown == "## Not the title\nBody text."
+
+
+def test_parse_document_strips_leading_title_heading_after_blank_lines(tmp_path: Path) -> None:
+    path = write(
+        tmp_path,
+        "---\ntitle: Hi\ndate: 2026-01-02\nslug: hi\n---\n\n\n# Hi\nBody text.\n",
+    )
+    doc = parse_document(path)
+    assert doc.body_markdown == "Body text."
+
+
 def test_parse_document_leaves_unresolvable_image_reference_untouched(tmp_path: Path) -> None:
     """A post referencing an image that lives in the site-wide images/ dir
     rather than its own folder must keep working -- see

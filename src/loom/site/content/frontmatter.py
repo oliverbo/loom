@@ -8,6 +8,7 @@ iA Writer content blocks, annotations, or `[%variable]` substitution.
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -72,6 +73,7 @@ def parse_document(path: Path, *, asset_dir: Path | None = None) -> Document:
     try:
         expanded = expand_content_blocks(body, current_file=path, root=root, metadata=front_matter)
         body = substitute_variables(expanded, front_matter)
+        body = _strip_leading_title_heading(body)
     except WriterMdError as exc:
         raise ContentError(f"{path}: {exc}") from exc
 
@@ -88,6 +90,24 @@ def parse_document(path: Path, *, asset_dir: Path | None = None) -> Document:
         extra=extra,
         asset_dir=asset_dir,
     )
+
+
+_LEADING_H1_RE = re.compile(r"^#(?!#)")
+
+
+def _strip_leading_title_heading(body: str) -> str:
+    """Drop a leading H1 from the body.
+
+    The post template renders `post.title` as the page's H1; a leading H1 in
+    the body (common in posts imported from elsewhere) would duplicate it.
+    """
+    lines = body.splitlines(keepends=True)
+    idx = 0
+    while idx < len(lines) and lines[idx].strip() == "":
+        idx += 1
+    if idx < len(lines) and _LEADING_H1_RE.match(lines[idx]):
+        del lines[idx]
+    return "".join(lines)
 
 
 def _coerce_date(value: Any, *, source: Path) -> date:
