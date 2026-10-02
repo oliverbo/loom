@@ -45,6 +45,43 @@ def test_missing_referenced_image_reported(sample_site: Path) -> None:
     assert any("referenced image not found" in e for e in errors)
 
 
+def test_missing_featured_photo_reported(sample_site: Path) -> None:
+    posts_dir = sample_site / "content" / "posts"
+    (posts_dir / "with-featured-photo.md").write_text(
+        "---\ntitle: Img\ndate: 2026-01-03\nslug: featured-img\n---\n"
+        "![missing](missing.png)\n",
+        encoding="utf-8",
+    )
+    errors = validate_site(sample_site)
+    assert any("referenced image not found" in e for e in errors)
+
+
+def test_featured_photo_falls_back_to_site_wide_images_dir(sample_site: Path) -> None:
+    (sample_site / "images" / "shared.png").write_bytes(b"fake-png")
+    posts_dir = sample_site / "content" / "posts"
+    (posts_dir / "with-featured-photo.md").write_text(
+        "---\ntitle: Img\ndate: 2026-01-03\nslug: featured-img\n---\n"
+        "![shared](shared.png)\n",
+        encoding="utf-8",
+    )
+    assert validate_site(sample_site) == []
+
+
+def test_captioned_image_reference_validated(sample_site: Path) -> None:
+    """A titled/captioned image reference (as an iA Writer content block
+    with a caption renders) must still be checked for existence -- a
+    narrower regex here previously let these silently skip validation.
+    """
+    posts_dir = sample_site / "content" / "posts"
+    (posts_dir / "with-caption.md").write_text(
+        "---\ntitle: Img\ndate: 2026-01-03\nslug: img-caption\n---\n"
+        'Intro.\n\n![missing](missing.png "A caption")\n',
+        encoding="utf-8",
+    )
+    errors = validate_site(sample_site)
+    assert any("referenced image not found" in e for e in errors)
+
+
 def test_missing_templates_dir_reported(sample_site: Path) -> None:
     (sample_site / "templates").rmdir()
     errors = validate_site(sample_site)

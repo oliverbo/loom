@@ -13,6 +13,12 @@
     <li>
       <h2><a href="{{ post.slug }}/">{{ post.title }}</a></h2>
       <p><time datetime="{{ post.date.isoformat() }}">{{ post.date.isoformat() }}</time></p>
+      {% if post.featured_photo %}
+      <figure>
+        <img src="{{ post.featured_photo.src }}" alt="{{ post.featured_photo.alt }}">
+        {% if post.featured_photo.caption %}<figcaption>{{ post.featured_photo.caption }}</figcaption>{% endif %}
+      </figure>
+      {% endif %}
       {{ excerpts[post.slug] | safe }}
       <p><a href="{{ post.slug }}/">Read more &rarr;</a></p>
     </li>

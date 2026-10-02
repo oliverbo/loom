@@ -7,16 +7,13 @@ the site at once.
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from loom.errors import ConfigError, ContentError
 from loom.site.config import SiteConfig, load_config
 from loom.site.content.discovery import bundle_assets, discover_posts
-from loom.site.content.frontmatter import parse_document
+from loom.site.content.frontmatter import IMAGE_REF_RE, parse_document, unwrap_image_destination
 from loom.site.models import Document
-
-IMAGE_REF_PATTERN = re.compile(r"!\[[^\]]*\]\(([^)\s]+)\)")
 
 
 def validate_site(site_root: Path) -> list[str]:
@@ -79,7 +76,13 @@ def _check_images(documents: list[Document], config: SiteConfig) -> list[str]:
     errors: list[str] = []
     images_dir = config.resolve(config.images_dir)
     for doc in documents:
-        for ref in IMAGE_REF_PATTERN.findall(doc.body_markdown):
+        refs = [
+            unwrap_image_destination(match.group("dest"))
+            for match in IMAGE_REF_RE.finditer(doc.body_markdown)
+        ]
+        if doc.featured_photo is not None:
+            refs.append(doc.featured_photo.src)
+        for ref in refs:
             if ref.startswith(("http://", "https://", "//")):
                 continue
             name = Path(ref).name

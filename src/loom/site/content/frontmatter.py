@@ -22,11 +22,35 @@ from writer_md import (
 from writer_md.errors import WriterMdError
 
 from loom.errors import ContentError
-from loom.site.models import Document
+from loom.site.models import Document, FeaturedPhoto
 
 # Front matter keys that map directly onto named `Document` fields.
 # Anything else in the front matter is preserved in `Document.extra`.
-KNOWN_KEYS = {"title", "date", "slug", "tags", "draft"}
+KNOWN_KEYS = {"title", "date", "slug", "tags", "draft", "featured_photo"}
+
+# Matches a Markdown image reference the way both a hand-written
+# `![alt](src)` and an expanded iA Writer content block (which can add a
+# caption as the image's title, and wrap a destination containing spaces
+# in `<...>`) render it. Shared with `loom.site.validation`, which scans
+# for every image reference in a post body rather than a single one.
+IMAGE_REF_RE = re.compile(
+    r'!\[(?P<alt>(?:\\.|[^\]\\])*)\]\('
+    r'(?P<dest><[^>]*>|[^\s)]+)'
+    r'(?:\s+"(?P<title>[^"]*)")?'
+    r"\)"
+)
+
+
+def unwrap_image_destination(dest: str) -> str:
+    """Strip the `<...>` wrapper a destination gets when it contains a space."""
+    if dest.startswith("<") and dest.endswith(">"):
+        return dest[1:-1]
+    return dest
+
+
+def _unescape_markdown(text: str) -> str:
+    """Reverse a Markdown backslash escape (`\\X` -> `X`)."""
+    return re.sub(r"\\(.)", r"\1", text)
 
 
 def split_frontmatter(text: str, *, source: Path) -> tuple[dict[str, Any], str]:
@@ -52,6 +76,12 @@ def parse_document(path: Path, *, asset_dir: Path | None = None) -> Document:
     resolve to any file under `asset_dir` for a post directory, or under
     this file's own directory otherwise. A trailing annotations block, if
     present, is stripped first.
+
+    A photo that's the sole content of the body's first paragraph (once
+    any leading title heading is stripped) is pulled out into
+    `Document.featured_photo` rather than left inline -- set the
+    `featured_photo: false` front matter field to keep it in the body
+    instead.
     """
     text = strip_annotations(path.read_text(encoding="utf-8"))
     front_matter, body = split_frontmatter(text, source=path)
@@ -69,11 +99,16 @@ def parse_document(path: Path, *, asset_dir: Path | None = None) -> Document:
     if not isinstance(draft, bool):
         raise ContentError(f"{path}: 'draft' must be true or false")
 
+    featured_photo_enabled = front_matter.get("featured_photo", True)
+    if not isinstance(featured_photo_enabled, bool):
+        raise ContentError(f"{path}: 'featured_photo' must be true or false")
+
     root = asset_dir if asset_dir is not None else path.parent
     try:
         expanded = expand_content_blocks(body, current_file=path, root=root, metadata=front_matter)
         body = substitute_variables(expanded, front_matter)
         body = _strip_leading_title_heading(body)
+        body, featured_photo = _extract_featured_photo(body, enabled=featured_photo_enabled)
     except WriterMdError as exc:
         raise ContentError(f"{path}: {exc}") from exc
 
@@ -89,6 +124,7 @@ def parse_document(path: Path, *, asset_dir: Path | None = None) -> Document:
         body_markdown=body,
         extra=extra,
         asset_dir=asset_dir,
+        featured_photo=featured_photo,
     )
 
 
@@ -108,6 +144,43 @@ def _strip_leading_title_heading(body: str) -> str:
     if idx < len(lines) and _LEADING_H1_RE.match(lines[idx]):
         del lines[idx]
     return "".join(lines)
+
+
+def _extract_featured_photo(body: str, *, enabled: bool) -> tuple[str, FeaturedPhoto | None]:
+    """Pull a photo that's the sole content of the body's first paragraph.
+
+    Runs after the leading title heading has already been stripped, so
+    "right below the title" and "the first paragraph of what's left" are
+    the same thing. A paragraph that mixes the image with other text
+    isn't a match -- the photo has to stand alone.
+    """
+    if not enabled:
+        return body, None
+
+    lines = body.splitlines()
+    start = 0
+    while start < len(lines) and lines[start].strip() == "":
+        start += 1
+    end = start
+    while end < len(lines) and lines[end].strip() != "":
+        end += 1
+
+    paragraph = "\n".join(lines[start:end]).strip()
+    match = IMAGE_REF_RE.fullmatch(paragraph)
+    if not match:
+        return body, None
+
+    photo = FeaturedPhoto(
+        src=unwrap_image_destination(match.group("dest")),
+        alt=_unescape_markdown(match.group("alt")),
+        caption=match.group("title") or "",
+    )
+
+    remaining = lines[:start] + lines[end:]
+    trim = 0
+    while trim < len(remaining) and remaining[trim].strip() == "":
+        trim += 1
+    return "\n".join(remaining[trim:]), photo
 
 
 def _coerce_date(value: Any, *, source: Path) -> date:

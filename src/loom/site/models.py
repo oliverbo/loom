@@ -21,6 +21,20 @@ SLUG_PATTERN = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
 
 @dataclass(frozen=True)
+class FeaturedPhoto:
+    """A photo extracted from right below a post's title.
+
+    `caption`, if present, came from the title/caption of the Markdown
+    image reference (e.g. an iA Writer content block's caption) -- plain
+    `![alt](src)` references leave it empty.
+    """
+
+    src: str
+    alt: str
+    caption: str = ""
+
+
+@dataclass(frozen=True)
 class Document:
     """A single piece of content (currently: a blog post).
 
@@ -39,6 +53,7 @@ class Document:
     body_markdown: str
     extra: dict[str, Any] = field(default_factory=dict)
     asset_dir: Path | None = None
+    featured_photo: FeaturedPhoto | None = None
 
     def is_slug_valid(self) -> bool:
         return bool(SLUG_PATTERN.match(self.slug))

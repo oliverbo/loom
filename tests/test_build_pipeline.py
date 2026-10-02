@@ -56,6 +56,37 @@ def test_build_index_excerpt_stops_at_more_marker(sample_site: Path) -> None:
     assert "hidden from the index" in post_html
 
 
+def test_build_renders_featured_photo_on_post_and_index(sample_site: Path) -> None:
+    (sample_site / "images" / "sunset.jpg").write_bytes(b"fake-jpeg")
+    (sample_site / "content" / "posts" / "hello-world.md").write_text(
+        "---\ntitle: Hello World\ndate: 2026-01-01\nslug: hello-world\n---\n"
+        "![a sunset](sunset.jpg)\n\nThe rest of the post.\n",
+        encoding="utf-8",
+    )
+    output_dir = build_site(sample_site)
+
+    post_html = (output_dir / "hello-world" / "index.html").read_text()
+    index_html = (output_dir / "index.html").read_text()
+
+    assert '<img src="sunset.jpg" alt="a sunset">' in post_html
+    assert '<img src="sunset.jpg" alt="a sunset">' in index_html
+    assert "![a sunset]" not in post_html
+
+
+def test_build_keeps_photo_inline_when_featured_photo_disabled(sample_site: Path) -> None:
+    (sample_site / "images" / "sunset.jpg").write_bytes(b"fake-jpeg")
+    (sample_site / "content" / "posts" / "hello-world.md").write_text(
+        "---\ntitle: Hello World\ndate: 2026-01-01\nslug: hello-world\nfeatured_photo: false\n---\n"
+        "![a sunset](sunset.jpg)\n\nThe rest of the post.\n",
+        encoding="utf-8",
+    )
+    output_dir = build_site(sample_site)
+
+    post_html = (output_dir / "hello-world" / "index.html").read_text()
+    assert "<figure>" not in post_html
+    assert '<img src="sunset.jpg" alt="a sunset" />' in post_html
+
+
 def test_build_honors_custom_posts_dir(sample_site: Path) -> None:
     with (sample_site / ".loom" / "loom.toml").open("a", encoding="utf-8") as handle:
         handle.write('\nposts_dir = "notes"\n')
