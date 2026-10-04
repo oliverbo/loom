@@ -27,7 +27,13 @@ from loom.site.content.frontmatter import KNOWN_KEYS
 from loom.site.validation import validate_site
 from loom.slug import slugify, titleize
 
-_DATE_PREFIX = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:[-_](.+))?$")
+# A leading date in a file/directory name, as ISO `YYYY-MM-DD` or US
+# `MM-DD-YYYY`, optionally followed by a `-`/`_`/whitespace separator and
+# the rest of the name.
+_DATE_PREFIXES = (
+    (re.compile(r"^(\d{4}-\d{2}-\d{2})(?:[-_\s]+(.+))?$"), "%Y-%m-%d"),
+    (re.compile(r"^(\d{2}-\d{2}-\d{4})(?:[-_\s]+(.+))?$"), "%m-%d-%Y"),
+)
 # Tried, in order, against a front matter `date`/`published` string that
 # isn't already a bare ISO date (which `date.fromisoformat` handles on
 # its own) -- common alternate formats seen in other tools' exports.
@@ -71,9 +77,9 @@ def import_note(root: Path, source: Path, *, today: str) -> ImportNoteResult:
     `today` is
     accepted for parity with `add_note` but is only ever used if a
     `source` somehow has neither existing front matter, a dated name, nor
-    a readable modification time.
+    a readable file date.
 
-    A leading `YYYY-MM-DD` in `source`'s file/directory name both
+    A leading `YYYY-MM-DD` or `MM-DD-YYYY` in `source`'s file/directory name both
     supplies the published date (when front matter doesn't already have
     one) and is stripped from the name used for the destination and for
     deriving `title`/`slug` -- e.g. `2024-01-15-hello-world.md` becomes
@@ -123,7 +129,7 @@ def import_note(root: Path, source: Path, *, today: str) -> ImportNoteResult:
     changed = front_matter.keys() != raw_front_matter.keys()
 
     resolved_date = _resolve_date(
-        front_matter, date_from_name=date_from_name, mtime_source=source, today=today
+        front_matter, date_from_name=date_from_name, file_source=main_file, today=today
     )
 
     before = dict(front_matter)
@@ -169,26 +175,30 @@ def _resolve_source(source: Path) -> tuple[Path, Path | None, str]:
 
 
 def _split_date_prefix(name: str) -> tuple[str | None, str]:
-    """Split a leading `YYYY-MM-DD` off `name`, if it's a valid date.
+    """Split a leading `YYYY-MM-DD` or `MM-DD-YYYY` off `name`, if it's a
+    valid date.
 
     Returns `(iso_date, remainder)` when `name` starts with a valid date
-    (`remainder` is whatever follows a `-`/`_` separator, or `name`
-    itself unchanged if the date isn't followed by anything to strip --
-    stripping it would leave an empty name). Returns `(None, name)`
-    unchanged if there's no leading date, or the digits present don't
-    form a real calendar date.
+    (`remainder` is whatever follows a `-`/`_`/whitespace separator, or
+    `name` itself unchanged if the date isn't followed by anything to
+    strip -- stripping it would leave an empty name). Returns
+    `(None, name)` unchanged if there's no leading date, or the digits
+    present don't form a real calendar date.
     """
-    match = _DATE_PREFIX.match(name)
-    if not match:
-        return None, name
+    for pattern, fmt in _DATE_PREFIXES:
+        match = pattern.match(name)
+        if not match:
+            continue
 
-    date_text, remainder = match.group(1), match.group(2)
-    try:
-        date_cls.fromisoformat(date_text)
-    except ValueError:
-        return None, name
+        date_text, remainder = match.group(1), match.group(2)
+        try:
+            parsed = datetime.strptime(date_text, fmt).date()
+        except ValueError:
+            return None, name
 
-    return date_text, (remainder or name)
+        return parsed.isoformat(), (remainder or name)
+
+    return None, name
 
 
 def _normalize_keys(raw: dict[str, Any]) -> dict[str, Any]:
@@ -224,12 +234,16 @@ def _normalize_keys(raw: dict[str, Any]) -> dict[str, Any]:
 
 
 def _resolve_date(
-    front_matter: dict[str, Any], *, date_from_name: str | None, mtime_source: Path, today: str
+    front_matter: dict[str, Any], *, date_from_name: str | None, file_source: Path, today: str
 ) -> str:
     """Resolve the published date: existing front matter `date` ->
     `date_from_name` (from a filename/dirname prefix, if any) ->
-    `mtime_source`'s last-modified time -> `today`, as an
+    `file_source`'s own file date (see `_file_date`) -> `today`, as an
     unreachable-in-practice final fallback.
+
+    `file_source` is the Markdown file itself, not a bundle directory --
+    a directory's timestamps change whenever anything inside it is
+    added or removed, so they say little about when the post was written.
 
     An existing `date` that can't be parsed in any recognized format is
     treated the same as a missing one (falls through to the rest of the
@@ -244,11 +258,29 @@ def _resolve_date(
     if date_from_name is not None:
         return date_from_name
 
+    file_date = _file_date(file_source)
+    return file_date if file_date is not None else today
+
+
+def _file_date(path: Path) -> str | None:
+    """Return `path`'s date as an ISO string: the earlier of its creation
+    time (where the platform records one, e.g. macOS's `st_birthtime`)
+    and its last-modified time, or `None` if it can't be stat'ed.
+
+    Creation time is the closer match for "when was this written" -- a
+    later edit bumps the modification time -- but it's not available
+    everywhere, and some copy/sync tools reset it while preserving the
+    modification time, hence taking whichever is earlier.
+    """
     try:
-        mtime = mtime_source.stat().st_mtime
+        stat = path.stat()
     except OSError:
-        return today
-    return date_cls.fromtimestamp(mtime).isoformat()
+        return None
+    timestamp = stat.st_mtime
+    birthtime = getattr(stat, "st_birthtime", None)
+    if birthtime:
+        timestamp = min(timestamp, birthtime)
+    return date_cls.fromtimestamp(timestamp).isoformat()
 
 
 def _try_coerce_date(value: Any) -> str | None:

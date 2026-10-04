@@ -406,3 +406,59 @@ def test_reports_validation_errors_but_keeps_the_file(sample_site: Path, tmp_pat
 
     assert result.path.is_file()
     assert any("hello-world" in error for error in result.validation_errors)
+
+
+def test_us_date_extracted_from_filename_with_title_suffix(
+    sample_site: Path, tmp_path: Path
+) -> None:
+    source = tmp_path / "07-20-2025-my-old-post.md"
+    source.write_text("Body.\n", encoding="utf-8")
+    _set_mtime(source, "2019-01-01")
+
+    result = import_note(sample_site, source, today=TODAY)
+
+    assert result.path == sample_site / "content" / "posts" / "my-old-post.md"
+    meta = _read_front_matter(result.path)
+    assert meta["date"] == "2025-07-20"
+    assert meta["title"] == "My Old Post"
+
+
+def test_date_prefix_separated_by_space(sample_site: Path, tmp_path: Path) -> None:
+    source = tmp_path / "07-20-2025 My Old Post.md"
+    source.write_text("Body.\n", encoding="utf-8")
+
+    result = import_note(sample_site, source, today=TODAY)
+
+    assert result.path == sample_site / "content" / "posts" / "My Old Post.md"
+    meta = _read_front_matter(result.path)
+    assert meta["date"] == "2025-07-20"
+
+
+def test_invalid_us_calendar_date_in_filename_falls_through_to_mtime(
+    sample_site: Path, tmp_path: Path
+) -> None:
+    source = tmp_path / "13-45-2024-post.md"
+    source.write_text("Body.\n", encoding="utf-8")
+    _set_mtime(source, "2019-05-05")
+
+    result = import_note(sample_site, source, today=TODAY)
+
+    assert result.path == sample_site / "content" / "posts" / "13-45-2024-post.md"
+    meta = _read_front_matter(result.path)
+    assert meta["date"] == "2019-05-05"
+
+
+def test_bundle_falls_back_to_main_file_date_not_directory(
+    sample_site: Path, tmp_path: Path
+) -> None:
+    bundle = tmp_path / "my-post"
+    bundle.mkdir()
+    main = bundle / "my-post.md"
+    main.write_text("Body.\n", encoding="utf-8")
+    _set_mtime(main, "2016-03-03")
+    _set_mtime(bundle, "2023-09-09")
+
+    result = import_note(sample_site, bundle, today=TODAY)
+
+    meta = _read_front_matter(result.path)
+    assert meta["date"] == "2016-03-03"
